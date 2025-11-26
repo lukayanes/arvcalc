@@ -902,27 +902,27 @@ function recalcMaos(){
 
     $("runBtn").addEventListener("click", runFromUrl);
 
-// repair controls
-const rateCosEl = $("rateCosmetic");
-const rateMidEl = $("rateMid");
-const rateFullEl = $("rateFull");
-const applyRepairsBtn = $("applyRepairs");
-
-// set some sensible defaults
-if(rateCosEl) rateCosEl.value = "15";
-if(rateMidEl) rateMidEl.value = "30";
-if(rateFullEl) rateFullEl.value = "50";
-
-if(applyRepairsBtn){
-  applyRepairsBtn.addEventListener("click", ()=>{
-    recalcMaos();
-  });
-}
-
-// initial load
-prefillFromUrl();
-
-    prefillFromUrl();
+      // repair controls
+      const rateCosEl = $("rateCosmetic");
+      const rateMidEl = $("rateMid");
+      const rateFullEl = $("rateFull");
+      const applyRepairsBtn = $("applyRepairs");
+      
+      // set some sensible defaults
+      if(rateCosEl) rateCosEl.value = "15";
+      if(rateMidEl) rateMidEl.value = "30";
+      if(rateFullEl) rateFullEl.value = "50";
+      
+      if(applyRepairsBtn){
+        applyRepairsBtn.addEventListener("click", ()=>{
+          recalcMaos();
+        });
+      }
+      
+      // initial load
+      prefillFromUrl();
+      
+          prefillFromUrl();
   </script>
 </body>
 </html>
