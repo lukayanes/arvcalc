@@ -338,9 +338,15 @@
   <div class="page">
     <header>
       <div class="brand">
-        <div class="brand-logo">
-          <img src="https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg" alt="Summit Flow" />
+        <div class="logo-large-wrap">
+          <img
+            id="heroImage"
+            src="https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg"
+            alt="Property"
+            class="logo-large"
+          />
         </div>
+
         <div>
           <div class="brand-text-title">Summit Flow</div>
           <div class="brand-text-sub">ARV & Offer Calculator (API Powered)</div>
@@ -566,6 +572,9 @@
       p.sqft      = numParam("sqft");
       p.year_built= numParam("year_built");
       p.zestimate = numParam("zestimate");
+            // subject property image (main photo)
+      p.subject_image_url = getParam("subject_image_url");
+
 
       // Primary ARV
       p.arv_source         = getParam("arv_source");
@@ -689,6 +698,17 @@
     function populateUI(p){
       // keep payload globally for recalcs
       window.__sfPayload = p;
+    
+      // Hero image: use property photo if available, else Summit Flow logo
+      const heroImg = $("heroImage");
+      if (heroImg) {
+        if (p.subject_image_url) {
+          heroImg.src = p.subject_image_url;
+        } else {
+          heroImg.src = "https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg";
+        }
+      }
+    
       // Property pills
       const pills = [];
       if(p.address || p.city || p.state || p.zipcode){
