@@ -407,6 +407,9 @@
             <div class="arv-source" id="arvSource">Source: –</div>
             <div class="arv-equity" id="equityAmount">Equity: –</div>
             <div class="arv-equity" id="equityPercent">Equity %: –</div>
+            <div class="arv-equity" id="lastSoldDate">Last Sold: –</div>
+            <div class="arv-equity" id="lastSoldPrice">Last Sold Price: –</div>
+
           </div>
         </div>
 
@@ -725,6 +728,21 @@
         $("equityPercent").textContent = `Equity %: ${pct}%`;
       } else {
         $("equityPercent").textContent = "Equity %: –";
+      }
+
+       // Last sold info
+      if (p.last_sale_date) {
+        let saleLabel = p.last_sale_date;
+        if (saleLabel.length >= 10) saleLabel = saleLabel.slice(0, 10);
+        $("lastSoldDate").textContent = `Last Sold: ${saleLabel}`;
+      } else {
+        $("lastSoldDate").textContent = "Last Sold: –";
+      }
+
+      if (p.last_sale_price != null) {
+        $("lastSoldPrice").textContent = `Last Sold Price: ${fmt(p.last_sale_price)}`;
+      } else {
+        $("lastSoldPrice").textContent = "Last Sold Price: –";
       }
 
       // Split ARVs
