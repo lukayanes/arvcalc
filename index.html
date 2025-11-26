@@ -542,6 +542,16 @@
       return Number.isFinite(n) ? n : null;
     }
 
+    function numFromInput(id, fallback){
+      const el = $(id);
+      if(!el) return fallback;
+      const v = el.value.trim();
+      if(!v) return fallback;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : fallback;
+}
+
+
     // Build the payload object purely from URL params
     function buildPayloadFromParams(){
       const p = {};
@@ -677,6 +687,8 @@
     }
 
     function populateUI(p){
+      // keep payload globally for recalcs
+      window.__sfPayload = p;
       // Property pills
       const pills = [];
       if(p.address || p.city || p.state || p.zipcode){
@@ -839,7 +851,77 @@
       }
     }
 
+    // ✅ INSERT STEP 2.4 HERE
+function recalcMaos(){
+  const p = window.__sfPayload;
+  if(!p) return;
+
+  const sqft = Number(p.sqft || 0);
+  if(!sqft || !Number.isFinite(sqft)) return;
+
+  const rateCos = numFromInput("rateCosmetic", 15);
+  const rateMid = numFromInput("rateMid", 30);
+  const rateFull = numFromInput("rateFull", 50);
+
+  const arvComps = p.arv_estimate_comps || p.arv_estimate || null;
+
+  const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
+    ? p.arv_estimate_zestimate
+    : p.zestimate || null;
+
+  if(!arvComps && !zestArv) return;
+
+  const repairCos = sqft * rateCos;
+  const repairMid = sqft * rateMid;
+  const repairFull = sqft * rateFull;
+
+  function maoWholesale(arv, repair){ return arv * 0.70 - repair; }
+  function maoNov85(arv, repair){ return arv * 0.85 - repair; }
+
+  if(arvComps){
+    $("wCosComps").textContent   = fmt(maoWholesale(arvComps, repairCos));
+    $("wMidComps").textContent   = fmt(maoWholesale(arvComps, repairMid));
+    $("wFullComps").textContent  = fmt(maoWholesale(arvComps, repairFull));
+
+    $("nCos85Comps").textContent = fmt(maoNov85(arvComps, repairCos));
+    $("nMid85Comps").textContent = fmt(maoNov85(arvComps, repairMid));
+    $("nFull85Comps").textContent= fmt(maoNov85(arvComps, repairFull));
+  }
+
+  if(zestArv){
+    $("wCosZest").textContent    = fmt(maoWholesale(zestArv, repairCos));
+    $("wMidZest").textContent    = fmt(maoWholesale(zestArv, repairMid));
+    $("wFullZest").textContent   = fmt(maoWholesale(zestArv, repairFull));
+
+    $("nCos85Zest").textContent  = fmt(maoNov85(zestArv, repairCos));
+    $("nMid85Zest").textContent  = fmt(maoNov85(zestArv, repairMid));
+    $("nFull85Zest").textContent = fmt(maoNov85(zestArv, repairFull));
+  }
+}
+
+
     $("runBtn").addEventListener("click", runFromUrl);
+
+// repair controls
+const rateCosEl = $("rateCosmetic");
+const rateMidEl = $("rateMid");
+const rateFullEl = $("rateFull");
+const applyRepairsBtn = $("applyRepairs");
+
+// set some sensible defaults
+if(rateCosEl) rateCosEl.value = "15";
+if(rateMidEl) rateMidEl.value = "30";
+if(rateFullEl) rateFullEl.value = "50";
+
+if(applyRepairsBtn){
+  applyRepairsBtn.addEventListener("click", ()=>{
+    recalcMaos();
+  });
+}
+
+// initial load
+prefillFromUrl();
+
     prefillFromUrl();
   </script>
 </body>
