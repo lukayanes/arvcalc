@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Summit Flow ARV Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --ink:#1E2B38;         /* charcoal text */
+      --muted:#5f6b78;       /* secondary text */
+      --navy:#0F3355;        /* deep navy */
+      --blue:#1F6FE5;        /* accent */
+      --cyan:#3EB5FF;        /* bright detail */
+      --bg:#F1F3F6;          /* page background */
+      --panel:#F7F8FA;       /* card background */
+      --border:#D6DAE1;
+      --radius:16px;
+      --shadow:0 14px 40px rgba(15, 51, 85, .10);
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--ink);
+      min-height:100vh;
+    }
+    .page{
+      max-width:1120px;
+      margin:0 auto;
+      padding:24px 16px 40px;
+    }
+    header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:24px;
+      gap:16px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .brand-logo{
+      width:40px;
+      height:40px;
+      border-radius:12px;
+      background:#ffffff;
+      border:1px solid var(--border);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:var(--shadow);
+    }
+    .brand-logo img{
+      max-width:28px;
+      max-height:28px;
+      display:block;
+    }
+    .brand-text-title{
+      font-size:20px;
+      font-weight:700;
+      letter-spacing:.03em;
+    }
+    .brand-text-sub{
+      font-size:13px;
+      color:var(--muted);
+    }
+    .tag{
+      padding:6px 10px;
+      border-radius:999px;
+      background:#E3EDFF;
+      color:#204273;
+      font-size:12px;
+      font-weight:500;
+      border:1px solid #C0D4FF;
+      white-space:nowrap;
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr);
+      gap:20px;
+    }
+    @media(max-width:900px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+    }
+
+    .card{
+      background:var(--panel);
+      border-radius:var(--radius);
+      padding:18px 18px 20px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--border);
+    }
+    .card h2{
+      font-size:16px;
+      margin-bottom:10px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .card h2 span.badge{
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      background:#E3EDFF;
+      color:#204273;
+    }
+    .card small{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .field-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap:10px;
+      margin-top:10px;
+    }
+    @media(max-width:600px){
+      .field-grid{
+        grid-template-columns:1fr;
+      }
+    }
+    label{
+      font-size:12px;
+      font-weight:500;
+      color:var(--muted);
+      display:block;
+      margin-bottom:4px;
+    }
+    input[type="text"]{
+      width:100%;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:#fff;
+      font-size:13px;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:9px 16px;
+      border-radius:999px;
+      border:none;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:600;
+      margin-top:10px;
+      gap:6px;
+    }
+    .btn-primary{
+      background:linear-gradient(135deg,#0F3355,#1F6FE5);
+      color:#fff;
+    }
+    .btn-primary:disabled{
+      opacity:.5;
+      cursor:default;
+    }
+
+    .pill-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:8px;
+      font-size:12px;
+    }
+    .pill{
+      padding:4px 8px;
+      border-radius:999px;
+      background:#E8ECF3;
+      color:var(--muted);
+    }
+
+    .arv-main{
+      display:flex;
+      flex-wrap:wrap;
+      gap:16px;
+      margin-top:10px;
+      align-items:flex-end;
+    }
+    .arv-main-block{
+      min-width:0;
+    }
+    .arv-label{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:2px;
+    }
+    .arv-value{
+      font-size:22px;
+      font-weight:700;
+    }
+    .arv-range{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .arv-source{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    .arv-equity{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:2px;
+    }
+
+    .arv-split{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+      margin-top:12px;
+    }
+    @media(max-width:600px){
+      .arv-split{
+        grid-template-columns:1fr;
+      }
+    }
+    .mini-card{
+      border-radius:12px;
+      background:#EDEFF4;
+      padding:8px 10px;
+      font-size:12px;
+    }
+    .mini-card-title{
+      font-weight:600;
+      margin-bottom:2px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      margin-top:10px;
+      font-size:12px;
+    }
+    th,td{
+      padding:6px 8px;
+    }
+    th{
+      text-align:left;
+      color:var(--muted);
+      font-weight:500;
+      font-size:11px;
+    }
+    tr:nth-child(even){
+      background:#ECEFF5;
+    }
+
+    .exit-strategy{
+      margin-top:8px;
+      font-size:13px;
+      font-weight:600;
+    }
+    .exit-strategy span{
+      padding:2px 8px;
+      border-radius:999px;
+      background:#DCFCE7;
+      color:#166534;
+      font-size:12px;
+      font-weight:600;
+      text-transform:uppercase;
+    }
+
+    .subtext{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    .comps-list{
+      margin-top:8px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .comp-item{
+      padding:8px 10px;
+      border-radius:10px;
+      background:#ECEFF5;
+      font-size:12px;
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+    }
+    .comp-line-top{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .comp-addr{
+      font-weight:600;
+    }
+    .comp-meta{
+      color:var(--muted);
+      font-size:11px;
+    }
+    .comp-link a{
+      font-size:11px;
+      color:var(--blue);
+      text-decoration:none;
+    }
+
+    .status-bar{
+      font-size:12px;
+      margin-top:8px;
+      color:var(--muted);
+    }
+    .status-error{
+      color:#B91C1C;
+    }
+    .status-success{
+      color:#166534;
+    }
+
+    /* Large logo under button */
+    .logo-large-wrap{
+      margin-top:24px;
+      display:flex;
+      justify-content:center;
+    }
+    .logo-large{
+      max-width:200px;
+      width:100%;
+      height:auto;
+      opacity:0.95;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div class="brand">
+        <div class="brand-logo">
+          <img src="https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg" alt="Summit Flow" />
+        </div>
+        <div>
+          <div class="brand-text-title">Summit Flow</div>
+          <div class="brand-text-sub">ARV & Offer Calculator (API Powered)</div>
+        </div>
+      </div>
+      <div class="tag">🚀 Loaded from Summit Flow URL data</div>
+    </header>
+
+    <div class="layout">
+      <!-- LEFT: INPUTS / STATUS -->
+      <section class="card">
+        <h2>Property Input <span class="badge">Step 1</span></h2>
+        <small>We’ll prefill from Summit Flow URL params. This page is a read-only viewer for that data.</small>
+
+        <div class="field-grid">
+          <div>
+            <label for="full_address">Full Address (optional)</label>
+            <input id="full_address" type="text" placeholder="123 Main St Dallas TX 75201" />
+          </div>
+          <div>
+            <label for="address1">Street Address</label>
+            <input id="address1" type="text" placeholder="123 Main St" />
+          </div>
+          <div>
+            <label for="city">City</label>
+            <input id="city" type="text" placeholder="Dallas" />
+          </div>
+          <div>
+            <label for="state">State</label>
+            <input id="state" type="text" placeholder="TX" />
+          </div>
+          <div>
+            <label for="zip">ZIP</label>
+            <input id="zip" type="text" placeholder="75201" />
+          </div>
+        </div>
+
+        <button id="runBtn" class="btn btn-primary">
+          Reload From URL
+        </button>
+
+        <div id="status" class="status-bar"></div>
+
+        <!-- Large Summit Flow logo -->
+        <div class="logo-large-wrap">
+          <img src="https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg" alt="Summit Flow" class="logo-large" />
+        </div>
+      </section>
+
+      <!-- RIGHT: RESULTS -->
+      <section class="card">
+        <h2>ARV & MAO Output <span class="badge">Step 2</span></h2>
+        <small>All values below are read directly from the URL that Summit Flow generated for this lead.</small>
+
+        <div class="pill-row" id="propSummary">
+          <!-- filled by JS -->
+        </div>
+
+        <div class="arv-main">
+          <div class="arv-main-block">
+            <div class="arv-label">Primary ARV Estimate</div>
+            <div class="arv-value" id="arvMain">$–</div>
+            <div class="arv-range" id="arvRange">Range: –</div>
+            <div class="arv-source" id="arvSource">Source: –</div>
+            <div class="arv-equity" id="equityAmount">Equity: –</div>
+            <div class="arv-equity" id="equityPercent">Equity %: –</div>
+          </div>
+        </div>
+
+        <div class="arv-split">
+          <div class="mini-card">
+            <div class="mini-card-title">Comps-Based ARV</div>
+            <div id="arvComps">$–</div>
+            <div id="arvCompsRange" class="subtext">Range: –</div>
+          </div>
+          <div class="mini-card">
+            <div class="mini-card-title">Zestimate ARV</div>
+            <div id="arvZest">$–</div>
+            <div id="arvZestRange" class="subtext">Range: –</div>
+          </div>
+        </div>
+
+        <div class="exit-strategy">
+          Suggested Exit: <span id="exitStrategy">–</span>
+        </div>
+
+        <!-- WHOLESALE (COMPS) -->
+        <h3 style="font-size:13px;margin-top:14px;">Wholesale MAO (Comps ARV)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Rehab Type</th>
+              <th>Cosmetic</th>
+              <th>Mid-Level</th>
+              <th>Full Gut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Wholesale</td>
+              <td id="wCosComps">$–</td>
+              <td id="wMidComps">$–</td>
+              <td id="wFullComps">$–</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- NOVATION 85% (COMPS) -->
+        <h3 style="font-size:13px;margin-top:10px;">Novation MAO – 85% ARV (Comps ARV)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Rehab Type</th>
+              <th>Cosmetic</th>
+              <th>Mid-Level</th>
+              <th>Full Gut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Novation 85%</td>
+              <td id="nCos85Comps">$–</td>
+              <td id="nMid85Comps">$–</td>
+              <td id="nFull85Comps">$–</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- WHOLESALE + NOVATION 85% (ZESTIMATE) -->
+        <h3 style="font-size:13px;margin-top:10px;">Wholesale & Novation MAO (Zestimate ARV)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Cosmetic</th>
+              <th>Mid-Level</th>
+              <th>Full Gut</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Wholesale</td>
+              <td id="wCosZest">$–</td>
+              <td id="wMidZest">$–</td>
+              <td id="wFullZest">$–</td>
+            </tr>
+            <tr>
+              <td>Novation 85%</td>
+              <td id="nCos85Zest">$–</td>
+              <td id="nMid85Zest">$–</td>
+              <td id="nFull85Zest">$–</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 style="font-size:13px;margin-top:14px;">Top 3 Comps</h3>
+        <div id="comps" class="comps-list"></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    function $(id){return document.getElementById(id);}
+
+    function fmt(n){
+      if(n === null || n === undefined || n === "" || isNaN(n)) return "$–";
+      return Number(n).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+    }
+
+    function getParam(name){
+      const url = new URL(window.location.href);
+      const val = url.searchParams.get(name);
+      return val && val !== "null" && val !== "undefined" ? val : "";
+    }
+
+    function numParam(name){
+      const v = getParam(name);
+      if(!v) return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    // Build the payload object purely from URL params
+    function buildPayloadFromParams(){
+      const p = {};
+
+      // Subject basics
+      p.address   = getParam("address");
+      p.city      = getParam("city");
+      p.state     = getParam("state");
+      p.zipcode   = getParam("zipcode");
+      p.bedrooms  = numParam("bedrooms");
+      p.bathrooms = numParam("bathrooms");
+      p.sqft      = numParam("sqft");
+      p.year_built= numParam("year_built");
+      p.zestimate = numParam("zestimate");
+
+      // Primary ARV
+      p.arv_source         = getParam("arv_source");
+      p.arv_estimate       = numParam("arv_estimate");
+      p.arv_low            = numParam("arv_low");
+      p.arv_high           = numParam("arv_high");
+
+      // ARV split
+      p.arv_estimate_comps = numParam("arv_estimate_comps");
+      p.arv_low_comps      = numParam("arv_low_comps");
+      p.arv_high_comps     = numParam("arv_high_comps");
+
+      // Equity + ownership + last sale + Zillow URL
+      p.equity_amount      = numParam("equity_amount");
+      p.equity_percent     = numParam("equity_percent");
+      p.ownership_years    = numParam("ownership_years");
+      p.last_sale_date     = getParam("last_sale_date");
+      p.last_sale_price    = numParam("last_sale_price");
+
+      // subject property Zillow link (supporting two possible param names)
+      p.zillow_url         = getParam("zillow_url") || getParam("subject_zillow_url");
+
+      p.exit_strategy      = getParam("exit_strategy");
+
+      // Equity (duplicate keys left for compatibility)
+      p.equity_amount  = numParam("equity_amount");
+      p.equity_percent = numParam("equity_percent");
+      p.exit_strategy  = getParam("exit_strategy");
+
+      // MAOs - COMPS
+      p.wholesale_mao_cosmetic_comps = numParam("wholesale_mao_cosmetic_comps");
+      p.wholesale_mao_mid_comps      = numParam("wholesale_mao_mid_comps");
+      p.wholesale_mao_full_comps     = numParam("wholesale_mao_full_comps");
+
+      p.novation_mao_cosmetic_85_comps = numParam("novation_mao_cosmetic_85_comps");
+      p.novation_mao_mid_85_comps      = numParam("novation_mao_mid_85_comps");
+      p.novation_mao_full_85_comps     = numParam("novation_mao_full_85_comps");
+
+      // MAOs - ZESTIMATE
+      p.wholesale_mao_cosmetic_zestimate = numParam("wholesale_mao_cosmetic_zestimate");
+      p.wholesale_mao_mid_zestimate      = numParam("wholesale_mao_mid_zestimate");
+      p.wholesale_mao_full_zestimate     = numParam("wholesale_mao_full_zestimate");
+
+      p.novation_mao_cosmetic_85_zestimate = numParam("novation_mao_cosmetic_85_zestimate");
+      p.novation_mao_mid_85_zestimate      = numParam("novation_mao_mid_85_zestimate");
+      p.novation_mao_full_85_zestimate     = numParam("novation_mao_full_85_zestimate");
+
+      // Comps from simple params: comp1/2/3 plus optional meta
+      const comps = [];
+      for(let i=1;i<=3;i++){
+        const url = getParam(`comp${i}`);
+        if(!url) continue;
+        const comp = {
+          address:  getParam(`comp${i}_address`) || null,
+          city:     getParam(`comp${i}_city`) || null,
+          state:    getParam(`comp${i}_state`) || null,
+          zipcode:  getParam(`comp${i}_zipcode`) || null,
+          bedrooms: numParam(`comp${i}_bedrooms`),
+          bathrooms:numParam(`comp${i}_bathrooms`),
+          sqft:     numParam(`comp${i}_sqft`),
+          price:    numParam(`comp${i}_price`),
+          zillow_url: url
+        };
+        comps.push(comp);
+      }
+      p.comps_top3 = comps;
+
+      return p;
+    }
+
+    // Prefill the left-side address fields plus auto-populate the right side
+    function prefillFromUrl(){
+      const full = getParam("full_address_1") || getParam("fullAddress") || "";
+      const a1   = getParam("address1") || getParam("street_address") || "";
+      const city = getParam("city") || "";
+      const state= getParam("state") || getParam("state_province") || "";
+      const zip  = getParam("postal_code") || getParam("zip") || "";
+
+      if(full) $("full_address").value = full;
+      if(a1)   $("address1").value = a1;
+      if(city) $("city").value = city;
+      if(state)$("state").value = state;
+      if(zip)  $("zip").value = zip;
+
+      const payload = buildPayloadFromParams();
+      const hasData = payload && (payload.arv_estimate || payload.zestimate || payload.arv_estimate_comps);
+
+      if(hasData){
+        populateUI(payload);
+        const status = $("status");
+        if(status){
+          status.textContent = "ARV + MAOs loaded from URL.";
+          status.className = "status-bar status-success";
+        }
+      }
+    }
+
+    // "Run" now just reloads from URL again
+    function runFromUrl(){
+      const payload = buildPayloadFromParams();
+      const status = $("status");
+      const hasData = payload && (payload.arv_estimate || payload.zestimate || payload.arv_estimate_comps);
+
+      if(!hasData){
+        status.textContent = "No ARV data found in URL params. Make sure your worker built the full arv_calc_url.";
+        status.className = "status-bar status-error";
+        return;
+      }
+
+      populateUI(payload);
+      status.textContent = "ARV + MAOs reloaded from URL.";
+      status.className = "status-bar status-success";
+    }
+
+    function populateUI(p){
+      // Property pills
+      const pills = [];
+      if(p.address || p.city || p.state || p.zipcode){
+        const line = [p.address, p.city, p.state, p.zipcode].filter(Boolean).join(", ");
+        pills.push(`<div class="pill">📍 ${line}</div>`);
+      }
+      if(p.bedrooms != null || p.bathrooms != null){
+        pills.push(`<div class="pill">🛏 ${p.bedrooms ?? "–"} / 🛁 ${p.bathrooms ?? "–"}</div>`);
+      }
+      if(p.sqft){
+        pills.push(`<div class="pill">📐 ${Number(p.sqft).toLocaleString()} sq ft</div>`);
+      }
+      if(p.year_built){
+        pills.push(`<div class="pill">📆 Built ${p.year_built}</div>`);
+      }
+
+      // 🔗 subject property Zillow link pill
+      if(p.zillow_url){
+        pills.push(
+          `<div class="pill">
+            <a href="${p.zillow_url}" target="_blank" style="text-decoration:none;color:inherit;">
+              🔗 View on Zillow
+            </a>
+          </div>`
+        );
+      }
+
+      // Ownership / last-sale pills
+      if(p.ownership_years != null){
+        const yrs = Number(p.ownership_years);
+        pills.push(`<div class="pill">📅 Owned ~${yrs.toFixed(1)} yrs</div>`);
+      }
+      if(p.last_sale_date){
+        let saleLabel = p.last_sale_date;
+        if(saleLabel.length >= 10) saleLabel = saleLabel.slice(0,10);
+        pills.push(`<div class="pill">🧾 Last sold: ${saleLabel}</div>`);
+      }
+      if(p.last_sale_price != null){
+        pills.push(`<div class="pill">💵 Last sale: ${fmt(p.last_sale_price)}</div>`);
+      }
+
+      $("propSummary").innerHTML = pills.join("");
+
+      // Primary ARV
+      $("arvMain").textContent = fmt(p.arv_estimate);
+      $("arvRange").textContent = (p.arv_low && p.arv_high)
+        ? `Range: ${fmt(p.arv_low)} – ${fmt(p.arv_high)}`
+        : "Range: –";
+
+      $("arvSource").textContent = `Source: ${
+        p.arv_source === "weighted_comps" ? "Weighted Comps" :
+        p.arv_source === "zestimate_only" ? "Zestimate Only" :
+        (p.arv_source || "Unknown")
+      }`;
+
+      // Equity + Equity %
+      if(p.equity_amount != null){
+        $("equityAmount").textContent = `Equity: ${fmt(p.equity_amount)}`;
+      } else {
+        $("equityAmount").textContent = "Equity: –";
+      }
+
+      if(p.equity_percent != null){
+        const pct = Number(p.equity_percent).toFixed(1);
+        $("equityPercent").textContent = `Equity %: ${pct}%`;
+      } else {
+        $("equityPercent").textContent = "Equity %: –";
+      }
+
+      // Split ARVs
+      $("arvComps").textContent = fmt(p.arv_estimate_comps);
+      $("arvCompsRange").textContent = (p.arv_low_comps && p.arv_high_comps)
+        ? `Range: ${fmt(p.arv_low_comps)} – ${fmt(p.arv_high_comps)}`
+        : "Range: –";
+
+      // Prefer arv_estimate_zestimate, fall back to raw zestimate if needed
+      const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
+        ? p.arv_estimate_zestimate
+        : p.zestimate;
+
+      $("arvZest").textContent = fmt(zestArv);
+
+      $("arvZestRange").textContent = (p.arv_low_zestimate && p.arv_high_zestimate)
+        ? `Range: ${fmt(p.arv_low_zestimate)} – ${fmt(p.arv_high_zestimate)}`
+        : "Range: –";
+
+      // Exit strategy
+      $("exitStrategy").textContent = p.exit_strategy
+        ? p.exit_strategy.replace(/_/g," ")
+        : "–";
+
+      // Wholesale / Novation – COMPS
+      $("wCosComps").textContent = fmt(p.wholesale_mao_cosmetic_comps);
+      $("wMidComps").textContent = fmt(p.wholesale_mao_mid_comps);
+      $("wFullComps").textContent = fmt(p.wholesale_mao_full_comps);
+
+      $("nCos85Comps").textContent = fmt(p.novation_mao_cosmetic_85_comps);
+      $("nMid85Comps").textContent = fmt(p.novation_mao_mid_85_comps);
+      $("nFull85Comps").textContent = fmt(p.novation_mao_full_85_comps);
+
+      // Wholesale / Novation – ZESTIMATE
+      $("wCosZest").textContent = fmt(p.wholesale_mao_cosmetic_zestimate);
+      $("wMidZest").textContent = fmt(p.wholesale_mao_mid_zestimate);
+      $("wFullZest").textContent = fmt(p.wholesale_mao_full_zestimate);
+
+      $("nCos85Zest").textContent = fmt(p.novation_mao_cosmetic_85_zestimate);
+      $("nMid85Zest").textContent = fmt(p.novation_mao_mid_85_zestimate);
+      $("nFull85Zest").textContent = fmt(p.novation_mao_full_85_zestimate);
+
+      // Comps
+      const compsEl = $("comps");
+      compsEl.innerHTML = "";
+      const comps = Array.isArray(p.comps_top3) ? p.comps_top3 : [];
+      if(!comps.length){
+        compsEl.innerHTML = `<div class="subtext">No comp URLs passed in URL.</div>`;
+      }else{
+        comps.forEach((c, idx)=>{
+          const addr = [c.address, c.city, c.state, c.zipcode].filter(Boolean).join(", ");
+          const meta = [];
+          if(c.bedrooms != null || c.bathrooms != null){
+            meta.push(`🛏 ${c.bedrooms ?? "–"} / 🛁 ${c.bathrooms ?? "–"}`);
+          }
+          if(c.sqft){
+            meta.push(`📐 ${Number(c.sqft).toLocaleString()} sq ft`);
+          }
+          if(c.price){
+            meta.push(`💰 ${fmt(c.price)}`);
+          }
+
+          const url = c.zillow_url || "#";
+
+          const div = document.createElement("div");
+          div.className = "comp-item";
+          div.innerHTML = `
+            <div class="comp-line-top">
+              <div class="comp-addr">Comp ${idx+1}: ${addr || "No address in URL"}</div>
+              <div class="comp-link">
+                ${url !== "#" ? `<a href="${url}" target="_blank">View on Zillow ↗</a>` : ""}
+              </div>
+            </div>
+            <div class="comp-meta">${meta.join(" · ") || ""}</div>
+          `;
+          compsEl.appendChild(div);
+        });
+      }
+    }
+
+    $("runBtn").addEventListener("click", runFromUrl);
+    prefillFromUrl();
+  </script>
+</body>
+</html>
