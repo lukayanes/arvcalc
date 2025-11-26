@@ -430,12 +430,42 @@
           Suggested Exit: <span id="exitStrategy">–</span>
         </div>
 
-        <!-- WHOLESALE (COMPS) -->
-        <h3 style="font-size:13px;margin-top:14px;">Wholesale MAO (Comps ARV)</h3>
+                <!-- REPAIR SETTINGS -->
+        <div style="margin-top:14px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">
+            Repair Cost Settings ($/sq ft)
+          </div>
+          <div class="field-grid">
+            <div>
+              <label for="rateCosmetic">Cosmetic ($/sq ft)</label>
+              <input id="rateCosmetic" type="text" placeholder="15" />
+            </div>
+            <div>
+              <label for="rateMid">Mid-Level ($/sq ft)</label>
+              <input id="rateMid" type="text" placeholder="30" />
+            </div>
+            <div>
+              <label for="rateFull">Full Gut ($/sq ft)</label>
+              <input id="rateFull" type="text" placeholder="50" />
+            </div>
+          </div>
+          <button id="applyRepairs" class="btn btn-primary" style="margin-top:8px;">
+            Apply Repair Settings
+          </button>
+          <div class="subtext">
+            Uses property sq ft × $/sq ft, then:<br />
+            Wholesale MAO = 70% × ARV – repairs<br />
+            Novation MAO (85%) = 85% × ARV – repairs
+          </div>
+        </div>
+
+
+        <!-- WHOLESALE + NOVATION 85% (COMPS ARV) -->
+        <h3 style="font-size:13px;margin-top:14px;">Wholesale &amp; Novation MAO (Comps ARV)</h3>
         <table>
           <thead>
             <tr>
-              <th>Rehab Type</th>
+              <th>Type</th>
               <th>Cosmetic</th>
               <th>Mid-Level</th>
               <th>Full Gut</th>
@@ -448,21 +478,6 @@
               <td id="wMidComps">$–</td>
               <td id="wFullComps">$–</td>
             </tr>
-          </tbody>
-        </table>
-
-        <!-- NOVATION 85% (COMPS) -->
-        <h3 style="font-size:13px;margin-top:10px;">Novation MAO – 85% ARV (Comps ARV)</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Rehab Type</th>
-              <th>Cosmetic</th>
-              <th>Mid-Level</th>
-              <th>Full Gut</th>
-            </tr>
-          </thead>
-          <tbody>
             <tr>
               <td>Novation 85%</td>
               <td id="nCos85Comps">$–</td>
@@ -471,6 +486,7 @@
             </tr>
           </tbody>
         </table>
+
 
         <!-- WHOLESALE + NOVATION 85% (ZESTIMATE) -->
         <h3 style="font-size:13px;margin-top:10px;">Wholesale & Novation MAO (Zestimate ARV)</h3>
