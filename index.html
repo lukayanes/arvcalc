@@ -42,6 +42,8 @@
       align-items:center;
       gap:12px;
     }
+
+    /* Small brand logo (top-left, stays Summit Flow only) */
     .brand-logo{
       width:40px;
       height:40px;
@@ -58,6 +60,7 @@
       max-height:28px;
       display:block;
     }
+
     .brand-text-title{
       font-size:20px;
       font-weight:700;
@@ -320,17 +323,20 @@
       color:#166534;
     }
 
-    /* Large logo under button */
+    /* Large property image under button (this is the one we change) */
     .logo-large-wrap{
       margin-top:24px;
       display:flex;
       justify-content:center;
     }
     .logo-large{
-      max-width:200px;
+      max-width:260px;
       width:100%;
       height:auto;
-      opacity:0.95;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      object-fit:cover;
+      opacity:0.98;
     }
   </style>
 </head>
@@ -338,15 +344,13 @@
   <div class="page">
     <header>
       <div class="brand">
-        <div class="logo-large-wrap">
+        <!-- Small Summit Flow logo (stays static) -->
+        <div class="brand-logo">
           <img
-            id="heroImage"
             src="https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg"
-            alt="Property"
-            class="logo-large"
+            alt="Summit Flow"
           />
         </div>
-
         <div>
           <div class="brand-text-title">Summit Flow</div>
           <div class="brand-text-sub">ARV & Offer Calculator (API Powered)</div>
@@ -390,9 +394,14 @@
 
         <div id="status" class="status-bar"></div>
 
-        <!-- Large Summit Flow logo -->
+        <!-- Big property image under the button (this is what we update from Zillow) -->
         <div class="logo-large-wrap">
-          <img src="https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg" alt="Summit Flow" class="logo-large" />
+          <img
+            id="propertyPhoto"
+            src="https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg"
+            alt="Property"
+            class="logo-large"
+          />
         </div>
       </section>
 
@@ -415,7 +424,6 @@
             <div class="arv-equity" id="equityPercent">Equity %: –</div>
             <div class="arv-equity" id="lastSoldDate">Last Sold: –</div>
             <div class="arv-equity" id="lastSoldPrice">Last Sold Price: –</div>
-
           </div>
         </div>
 
@@ -436,7 +444,7 @@
           Suggested Exit: <span id="exitStrategy">–</span>
         </div>
 
-                <!-- REPAIR SETTINGS -->
+        <!-- REPAIR SETTINGS -->
         <div style="margin-top:14px;">
           <div style="font-size:13px;font-weight:600;margin-bottom:6px;">
             Repair Cost Settings ($/sq ft)
@@ -465,7 +473,6 @@
           </div>
         </div>
 
-
         <!-- WHOLESALE + NOVATION 85% (COMPS ARV) -->
         <h3 style="font-size:13px;margin-top:14px;">Wholesale &amp; Novation MAO (Comps ARV)</h3>
         <table>
@@ -492,7 +499,6 @@
             </tr>
           </tbody>
         </table>
-
 
         <!-- WHOLESALE + NOVATION 85% (ZESTIMATE) -->
         <h3 style="font-size:13px;margin-top:10px;">Wholesale & Novation MAO (Zestimate ARV)</h3>
@@ -555,8 +561,7 @@
       if(!v) return fallback;
       const n = Number(v);
       return Number.isFinite(n) ? n : fallback;
-}
-
+    }
 
     // Build the payload object purely from URL params
     function buildPayloadFromParams(){
@@ -572,9 +577,9 @@
       p.sqft      = numParam("sqft");
       p.year_built= numParam("year_built");
       p.zestimate = numParam("zestimate");
-            // subject property image (main photo)
-      p.subject_image_url = getParam("subject_image_url");
 
+      // subject property image (main photo)
+      p.subject_image_url = getParam("subject_image_url");
 
       // Primary ARV
       p.arv_source         = getParam("arv_source");
@@ -592,7 +597,6 @@
       p.arv_low_zestimate      = numParam("arv_low_zestimate");
       p.arv_high_zestimate     = numParam("arv_high_zestimate");
 
-
       // Equity + ownership + last sale + Zillow URL
       p.equity_amount      = numParam("equity_amount");
       p.equity_percent     = numParam("equity_percent");
@@ -604,11 +608,6 @@
       p.zillow_url         = getParam("zillow_url") || getParam("subject_zillow_url");
 
       p.exit_strategy      = getParam("exit_strategy");
-
-      // Equity (duplicate keys left for compatibility)
-      p.equity_amount  = numParam("equity_amount");
-      p.equity_percent = numParam("equity_percent");
-      p.exit_strategy  = getParam("exit_strategy");
 
       // MAOs - COMPS
       p.wholesale_mao_cosmetic_comps = numParam("wholesale_mao_cosmetic_comps");
@@ -698,17 +697,19 @@
     function populateUI(p){
       // keep payload globally for recalcs
       window.__sfPayload = p;
-    
-      // Hero image: use property photo if available, else Summit Flow logo
-      const heroImg = $("heroImage");
-      if (heroImg) {
+
+      // Big property photo under the button
+      const photo = $("propertyPhoto");
+      if (photo) {
         if (p.subject_image_url) {
-          heroImg.src = p.subject_image_url;
+          photo.src = p.subject_image_url;
+          photo.alt = "Property";
         } else {
-          heroImg.src = "https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg";
+          photo.src = "https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg";
+          photo.alt = "Summit Flow";
         }
       }
-    
+
       // Property pills
       const pills = [];
       if(p.address || p.city || p.state || p.zipcode){
@@ -778,7 +779,7 @@
         $("equityPercent").textContent = "Equity %: –";
       }
 
-       // Last sold info
+      // Last sold info
       if (p.last_sale_date) {
         let saleLabel = p.last_sale_date;
         if (saleLabel.length >= 10) saleLabel = saleLabel.slice(0, 10);
@@ -871,78 +872,74 @@
       }
     }
 
-    // ✅ INSERT STEP 2.4 HERE
-function recalcMaos(){
-  const p = window.__sfPayload;
-  if(!p) return;
+    function recalcMaos(){
+      const p = window.__sfPayload;
+      if(!p) return;
 
-  const sqft = Number(p.sqft || 0);
-  if(!sqft || !Number.isFinite(sqft)) return;
+      const sqft = Number(p.sqft || 0);
+      if(!sqft || !Number.isFinite(sqft)) return;
 
-  const rateCos = numFromInput("rateCosmetic", 15);
-  const rateMid = numFromInput("rateMid", 30);
-  const rateFull = numFromInput("rateFull", 50);
+      const rateCos = numFromInput("rateCosmetic", 15);
+      const rateMid = numFromInput("rateMid", 30);
+      const rateFull = numFromInput("rateFull", 50);
 
-  const arvComps = p.arv_estimate_comps || p.arv_estimate || null;
+      const arvComps = p.arv_estimate_comps || p.arv_estimate || null;
 
-  const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
-    ? p.arv_estimate_zestimate
-    : p.zestimate || null;
+      const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
+        ? p.arv_estimate_zestimate
+        : p.zestimate || null;
 
-  if(!arvComps && !zestArv) return;
+      if(!arvComps && !zestArv) return;
 
-  const repairCos = sqft * rateCos;
-  const repairMid = sqft * rateMid;
-  const repairFull = sqft * rateFull;
+      const repairCos = sqft * rateCos;
+      const repairMid = sqft * rateMid;
+      const repairFull = sqft * rateFull;
 
-  function maoWholesale(arv, repair){ return arv * 0.70 - repair; }
-  function maoNov85(arv, repair){ return arv * 0.85 - repair; }
+      function maoWholesale(arv, repair){ return arv * 0.70 - repair; }
+      function maoNov85(arv, repair){ return arv * 0.85 - repair; }
 
-  if(arvComps){
-    $("wCosComps").textContent   = fmt(maoWholesale(arvComps, repairCos));
-    $("wMidComps").textContent   = fmt(maoWholesale(arvComps, repairMid));
-    $("wFullComps").textContent  = fmt(maoWholesale(arvComps, repairFull));
+      if(arvComps){
+        $("wCosComps").textContent   = fmt(maoWholesale(arvComps, repairCos));
+        $("wMidComps").textContent   = fmt(maoWholesale(arvComps, repairMid));
+        $("wFullComps").textContent  = fmt(maoWholesale(arvComps, repairFull));
 
-    $("nCos85Comps").textContent = fmt(maoNov85(arvComps, repairCos));
-    $("nMid85Comps").textContent = fmt(maoNov85(arvComps, repairMid));
-    $("nFull85Comps").textContent= fmt(maoNov85(arvComps, repairFull));
-  }
+        $("nCos85Comps").textContent = fmt(maoNov85(arvComps, repairCos));
+        $("nMid85Comps").textContent = fmt(maoNov85(arvComps, repairMid));
+        $("nFull85Comps").textContent= fmt(maoNov85(arvComps, repairFull));
+      }
 
-  if(zestArv){
-    $("wCosZest").textContent    = fmt(maoWholesale(zestArv, repairCos));
-    $("wMidZest").textContent    = fmt(maoWholesale(zestArv, repairMid));
-    $("wFullZest").textContent   = fmt(maoWholesale(zestArv, repairFull));
+      if(zestArv){
+        $("wCosZest").textContent    = fmt(maoWholesale(zestArv, repairCos));
+        $("wMidZest").textContent    = fmt(maoWholesale(zestArv, repairMid));
+        $("wFullZest").textContent   = fmt(maoWholesale(zestArv, repairFull));
 
-    $("nCos85Zest").textContent  = fmt(maoNov85(zestArv, repairCos));
-    $("nMid85Zest").textContent  = fmt(maoNov85(zestArv, repairMid));
-    $("nFull85Zest").textContent = fmt(maoNov85(zestArv, repairFull));
-  }
-}
-
+        $("nCos85Zest").textContent  = fmt(maoNov85(zestArv, repairCos));
+        $("nMid85Zest").textContent  = fmt(maoNov85(zestArv, repairMid));
+        $("nFull85Zest").textContent = fmt(maoNov85(zestArv, repairFull));
+      }
+    }
 
     $("runBtn").addEventListener("click", runFromUrl);
 
-      // repair controls
-      const rateCosEl = $("rateCosmetic");
-      const rateMidEl = $("rateMid");
-      const rateFullEl = $("rateFull");
-      const applyRepairsBtn = $("applyRepairs");
-      
-      // set some sensible defaults
-      if(rateCosEl) rateCosEl.value = "15";
-      if(rateMidEl) rateMidEl.value = "30";
-      if(rateFullEl) rateFullEl.value = "50";
-      
-      if(applyRepairsBtn){
-        applyRepairsBtn.addEventListener("click", ()=>{
-          recalcMaos();
-        });
-      }
-      
-      // initial load
-      prefillFromUrl();
-      
-          prefillFromUrl();
+    // repair controls
+    const rateCosEl = $("rateCosmetic");
+    const rateMidEl = $("rateMid");
+    const rateFullEl = $("rateFull");
+    const applyRepairsBtn = $("applyRepairs");
+
+    // set some sensible defaults
+    if(rateCosEl) rateCosEl.value = "15";
+    if(rateMidEl) rateMidEl.value = "30";
+    if(rateFullEl) rateFullEl.value = "50";
+
+    if(applyRepairsBtn){
+      applyRepairsBtn.addEventListener("click", ()=>{
+        recalcMaos();
+      });
+    }
+
+    // initial load
+    prefillFromUrl();
   </script>
 </body>
 </html>
