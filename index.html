@@ -323,7 +323,7 @@
       color:#166534;
     }
 
-    /* Large property image under button (this is the one we change) */
+    /* Large property image container */
     .logo-large-wrap{
       margin-top:24px;
       display:flex;
@@ -337,6 +337,83 @@
       box-shadow:var(--shadow);
       object-fit:cover;
       opacity:0.98;
+    }
+
+    /* Subject photo carousel */
+    .photo-carousel{
+      margin-top:24px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      align-items:center;
+    }
+    .photo-main{
+      width:100%;
+      max-width:320px;
+    }
+    .photo-main img{
+      width:100%;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      object-fit:cover;
+    }
+    .photo-thumbs{
+      display:flex;
+      gap:6px;
+      overflow-x:auto;
+      padding:4px 2px 2px;
+      max-width:100%;
+    }
+    .photo-thumb{
+      flex:0 0 auto;
+      width:56px;
+      height:56px;
+      border-radius:12px;
+      overflow:hidden;
+      border:2px solid transparent;
+      cursor:pointer;
+    }
+    .photo-thumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .photo-thumb.active{
+      border-color:var(--blue);
+    }
+
+    /* Comp photos + toggle */
+    .comp-photos{
+      margin-top:6px;
+      display:flex;
+      gap:6px;
+      overflow-x:auto;
+      padding-bottom:2px;
+    }
+    .comp-photo-thumb{
+      flex:0 0 auto;
+      width:48px;
+      height:48px;
+      border-radius:10px;
+      overflow:hidden;
+    }
+    .comp-photo-thumb img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .comp-toggle{
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      font-size:11px;
+      color:var(--muted);
+      cursor:pointer;
+    }
+    .comp-toggle input[type="checkbox"]{
+      cursor:pointer;
     }
   </style>
 </head>
@@ -394,14 +471,21 @@
 
         <div id="status" class="status-bar"></div>
 
-        <!-- Big property image under the button (this is what we update from Zillow) -->
+        <!-- Subject photo carousel (cover + all photos from Zillow) -->
         <div class="logo-large-wrap">
-          <img
-            id="propertyPhoto"
-            src="https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg"
-            alt="Property"
-            class="logo-large"
-          />
+          <div class="photo-carousel" id="subjectCarousel">
+            <div class="photo-main">
+              <img
+                id="subjectMainPhoto"
+                src="https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg"
+                alt="Property"
+                class="logo-large"
+              />
+            </div>
+            <div class="photo-thumbs" id="subjectThumbs">
+              <!-- thumb images injected by JS -->
+            </div>
+          </div>
         </div>
       </section>
 
@@ -527,7 +611,7 @@
           </tbody>
         </table>
 
-        <h3 style="font-size:13px;margin-top:14px;">Top 3 Comps</h3>
+        <h3 style="font-size:13px;margin-top:14px;">Top Comps (up to 5)</h3>
         <div id="comps" class="comps-list"></div>
       </section>
     </div>
@@ -578,8 +662,29 @@
       p.year_built= numParam("year_built");
       p.zestimate = numParam("zestimate");
 
-      // subject property image (main photo)
+      // subject property image (main photo + gallery)
       p.subject_image_url = getParam("subject_image_url");
+      p.subject_images = [];
+
+      // Support JSON-encoded array OR numbered params for subject photos
+      const subjJson =
+        getParam("subject_images_json") ||
+        getParam("subject_image_urls") ||
+        null;
+      if (subjJson) {
+        try {
+          const parsed = JSON.parse(decodeURIComponent(subjJson));
+          if (Array.isArray(parsed)) {
+            p.subject_images = parsed.filter(Boolean);
+          }
+        } catch(e){}
+      }
+      if (!p.subject_images.length) {
+        for (let i = 1; i <= 20; i++) {
+          const u = getParam(`subject_image_${i}`);
+          if (u) p.subject_images.push(u);
+        }
+      }
 
       // Primary ARV
       p.arv_source         = getParam("arv_source");
@@ -627,21 +732,47 @@
       p.novation_mao_mid_85_zestimate      = numParam("novation_mao_mid_85_zestimate");
       p.novation_mao_full_85_zestimate     = numParam("novation_mao_full_85_zestimate");
 
-      // Comps from simple params: comp1/2/3 plus optional meta
+      // Comps from simple params: comp1..comp5 plus optional meta, photos, last-sold
       const comps = [];
-      for(let i=1;i<=3;i++){
+      for (let i = 1; i <= 5; i++) {
         const url = getParam(`comp${i}`);
-        if(!url) continue;
+        if (!url) continue;
+
+        // images for each comp (JSON or numbered)
+        let compImages = [];
+        const imgJson =
+          getParam(`comp${i}_images_json`) ||
+          getParam(`comp${i}_image_urls`) ||
+          getParam(`comp${i}_images`) ||
+          null;
+        if (imgJson) {
+          try {
+            const parsed = JSON.parse(decodeURIComponent(imgJson));
+            if (Array.isArray(parsed)) {
+              compImages = parsed.filter(Boolean);
+            }
+          } catch(e){}
+        }
+        if (!compImages.length) {
+          for (let k = 1; k <= 10; k++) {
+            const u = getParam(`comp${i}_image${k}`);
+            if (u) compImages.push(u);
+          }
+        }
+
         const comp = {
-          address:  getParam(`comp${i}_address`) || null,
-          city:     getParam(`comp${i}_city`) || null,
-          state:    getParam(`comp${i}_state`) || null,
-          zipcode:  getParam(`comp${i}_zipcode`) || null,
-          bedrooms: numParam(`comp${i}_bedrooms`),
-          bathrooms:numParam(`comp${i}_bathrooms`),
-          sqft:     numParam(`comp${i}_sqft`),
-          price:    numParam(`comp${i}_price`),
-          zillow_url: url
+          address:        getParam(`comp${i}_address`) || null,
+          city:           getParam(`comp${i}_city`) || null,
+          state:          getParam(`comp${i}_state`) || null,
+          zipcode:        getParam(`comp${i}_zipcode`) || null,
+          bedrooms:       numParam(`comp${i}_bedrooms`),
+          bathrooms:      numParam(`comp${i}_bathrooms`),
+          sqft:           numParam(`comp${i}_sqft`),
+          price:          numParam(`comp${i}_price`),
+          last_sale_date: getParam(`comp${i}_last_sale_date`) || null,
+          last_sale_price:numParam(`comp${i}_last_sale_price`),
+          zillow_url:     url,
+          images:         compImages
         };
         comps.push(comp);
       }
@@ -698,16 +829,46 @@
       // keep payload globally for recalcs
       window.__sfPayload = p;
 
-      // Big property photo under the button
-      const photo = $("propertyPhoto");
-      if (photo) {
-        if (p.subject_image_url) {
-          photo.src = p.subject_image_url;
-          photo.alt = "Property";
-        } else {
-          photo.src = "https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg";
-          photo.alt = "Summit Flow";
-        }
+      // Subject photo carousel under the button
+      const mainPhotoEl = $("subjectMainPhoto");
+      const thumbsWrap  = $("subjectThumbs");
+
+      // Build list of subject images (all from Zillow)
+      let subjectImages = [];
+      if (Array.isArray(p.subject_images) && p.subject_images.length) {
+        subjectImages = p.subject_images.slice();
+      } else if (p.subject_image_url) {
+        subjectImages = [p.subject_image_url];
+      }
+
+      if (!subjectImages.length) {
+        // fallback to Summit Flow logo
+        subjectImages = ["https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg"];
+      }
+
+      if (mainPhotoEl) {
+        mainPhotoEl.src = subjectImages[0];
+        mainPhotoEl.alt = "Property";
+      }
+
+      if (thumbsWrap) {
+        thumbsWrap.innerHTML = "";
+        subjectImages.forEach((url, idx) => {
+          const thumb = document.createElement("div");
+          thumb.className = "photo-thumb" + (idx === 0 ? " active" : "");
+          thumb.dataset.index = String(idx);
+          thumb.innerHTML = `<img src="${url}" alt="Property photo ${idx+1}" />`;
+          thumb.addEventListener("click", () => {
+            if (mainPhotoEl) {
+              mainPhotoEl.src = url;
+            }
+            // toggle active state
+            const allThumbs = thumbsWrap.querySelectorAll(".photo-thumb");
+            allThumbs.forEach(t => t.classList.remove("active"));
+            thumb.classList.add("active");
+          });
+          thumbsWrap.appendChild(thumb);
+        });
       }
 
       // Property pills
@@ -834,42 +995,129 @@
       $("nMid85Zest").textContent = fmt(p.novation_mao_mid_85_zestimate);
       $("nFull85Zest").textContent = fmt(p.novation_mao_full_85_zestimate);
 
-      // Comps
+      // Comps (up to 5) with photos, last-sold, and include toggles
       const compsEl = $("comps");
       compsEl.innerHTML = "";
       const comps = Array.isArray(p.comps_top3) ? p.comps_top3 : [];
-      if(!comps.length){
+      if (!comps.length) {
         compsEl.innerHTML = `<div class="subtext">No comp URLs passed in URL.</div>`;
-      }else{
-        comps.forEach((c, idx)=>{
+      } else {
+        comps.forEach((c, idx) => {
           const addr = [c.address, c.city, c.state, c.zipcode].filter(Boolean).join(", ");
-          const meta = [];
-          if(c.bedrooms != null || c.bathrooms != null){
-            meta.push(`🛏 ${c.bedrooms ?? "–"} / 🛁 ${c.bathrooms ?? "–"}`);
+
+          const metaParts = [];
+          if (c.bedrooms != null || c.bathrooms != null) {
+            metaParts.push(`🛏 ${c.bedrooms ?? "–"} / 🛁 ${c.bathrooms ?? "–"}`);
           }
-          if(c.sqft){
-            meta.push(`📐 ${Number(c.sqft).toLocaleString()} sq ft`);
+          if (c.sqft) {
+            metaParts.push(`📐 ${Number(c.sqft).toLocaleString()} sq ft`);
           }
-          if(c.price){
-            meta.push(`💰 ${fmt(c.price)}`);
+          if (c.price) {
+            metaParts.push(`💰 ${fmt(c.price)}`);
+          }
+          if (c.last_sale_date) {
+            let d = c.last_sale_date;
+            if (d.length >= 10) d = d.slice(0, 10);
+            metaParts.push(`🧾 Last sold: ${d}`);
+          }
+          if (c.last_sale_price != null) {
+            metaParts.push(`💵 Last sale: ${fmt(c.last_sale_price)}`);
           }
 
           const url = c.zillow_url || "#";
+          const hasPhotos = Array.isArray(c.images) && c.images.length;
 
           const div = document.createElement("div");
           div.className = "comp-item";
+          div.dataset.compIndex = String(idx);
           div.innerHTML = `
             <div class="comp-line-top">
               <div class="comp-addr">Comp ${idx+1}: ${addr || "No address in URL"}</div>
-              <div class="comp-link">
-                ${url !== "#" ? `<a href="${url}" target="_blank">View on Zillow ↗</a>` : ""}
+              <div style="display:flex;align-items:center;gap:8px;">
+                ${url !== "#" ? `<a href="${url}" target="_blank" class="comp-link">View on Zillow ↗</a>` : ""}
+                <label class="comp-toggle">
+                  <input type="checkbox" class="comp-include" data-comp-index="${idx}" checked />
+                  <span>Include</span>
+                </label>
               </div>
             </div>
-            <div class="comp-meta">${meta.join(" · ") || ""}</div>
+            <div class="comp-meta">${metaParts.join(" · ") || ""}</div>
+            ${hasPhotos ? `
+              <div class="comp-photos">
+                ${c.images.slice(0,5).map((imgUrl, imgIdx) => `
+                  <div class="comp-photo-thumb">
+                    <img src="${imgUrl}" alt="Comp ${idx+1} photo ${imgIdx+1}" />
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
           `;
           compsEl.appendChild(div);
         });
       }
+
+      // Store comps on payload for toggles + recompute
+      p.comps_top3 = comps;
+      setupCompToggleHandlers();
+    }
+
+    function recomputeCompsArv(){
+      const p = window.__sfPayload;
+      if (!p) return;
+
+      const comps = Array.isArray(p.comps_top3) ? p.comps_top3 : [];
+      if (!comps.length) return;
+
+      const checkboxes = document.querySelectorAll('.comp-include');
+      const includedPrices = [];
+
+      checkboxes.forEach(cb => {
+        const idx = Number(cb.getAttribute('data-comp-index'));
+        if (!cb.checked) return;
+        const comp = comps[idx];
+        if (!comp) return;
+        const price = Number(comp.price);
+        if (Number.isFinite(price) && price > 0) {
+          includedPrices.push(price);
+        }
+      });
+
+      if (!includedPrices.length) {
+        p.arv_estimate_comps = null;
+        p.arv_low_comps = null;
+        p.arv_high_comps = null;
+      } else {
+        const sum = includedPrices.reduce((a,b)=>a+b,0);
+        const avg = sum / includedPrices.length;
+        const low = Math.min(...includedPrices);
+        const high = Math.max(...includedPrices);
+        p.arv_estimate_comps = avg;
+        p.arv_low_comps = low;
+        p.arv_high_comps = high;
+      }
+
+      $("arvComps").textContent = fmt(p.arv_estimate_comps);
+      $("arvCompsRange").textContent =
+        (p.arv_low_comps && p.arv_high_comps)
+          ? `Range: ${fmt(p.arv_low_comps)} – ${fmt(p.arv_high_comps)}`
+          : "Range: –";
+
+      // Re-run MAO math using new comps ARV
+      recalcMaos();
+    }
+
+    function setupCompToggleHandlers(){
+      const toggles = document.querySelectorAll('.comp-include');
+      if (!toggles.length) return;
+
+      toggles.forEach(cb => {
+        cb.addEventListener('change', () => {
+          recomputeCompsArv();
+        });
+      });
+
+      // Do one initial compute so comps ARV/MAOs match any subset
+      recomputeCompsArv();
     }
 
     function recalcMaos(){
