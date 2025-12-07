@@ -341,15 +341,45 @@
 
     /* Subject photo carousel */
     .photo-carousel{
-      margin-top:24px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      align-items:center;
-    }
-    .photo-main{
-      width:100%;
-      max-width:320px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-start;   /* hug left column */
+}
+
+/* SUBJECT THUMBNAILS – grid in left column */
+.photo-thumbs{
+  display:grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 thumbs per row */
+  gap:6px;
+  max-width:320px;        /* keeps them inside that left card */
+  width:100%;
+  padding:4px 0 0;
+  overflow:visible;       /* no horizontal scroll across the page */
+}
+
+.photo-thumb{
+  width:70px;
+  height:70px;
+  border-radius:12px;
+  overflow:hidden;
+  cursor:pointer;
+  outline:2px solid transparent;
+  outline-offset:2px;
+  transition:outline .15s ease, transform .15s ease;
+}
+
+.photo-thumb img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.photo-thumb.active{
+  outline-color:var(--blue);
+  transform:translateY(-1px);
+}
+
     }
     .photo-main img{
       width:100%;
