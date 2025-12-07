@@ -387,17 +387,19 @@
     .comp-photos{
       margin-top:6px;
       display:flex;
-      gap:6px;
+      gap:8px;
       overflow-x:auto;
-      padding-bottom:2px;
+      padding-bottom:4px;
     }
+
     .comp-photo-thumb{
       flex:0 0 auto;
-      width:48px;
-      height:48px;
-      border-radius:10px;
+      width:80px;      /* bigger thumbs */
+      height:80px;
+      border-radius:12px;
       overflow:hidden;
     }
+
     .comp-photo-thumb img{
       width:100%;
       height:100%;
@@ -793,6 +795,49 @@
   }
 
   // ==============================
+  // MAIN ARV SUMMARY REFRESH
+  // ==============================
+  function refreshArvSummary(p){
+    const compsArv = p.arv_estimate_comps;
+    const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
+      ? p.arv_estimate_zestimate
+      : (p.zestimate || null);
+
+    let primary = null;
+    let low = null;
+    let high = null;
+    let source = "unknown";
+
+    if (compsArv) {
+      primary = compsArv;
+      low = p.arv_low_comps ?? Math.round(compsArv * 0.93);
+      high = p.arv_high_comps ?? Math.round(compsArv * 1.07);
+      source = "weighted_comps";
+    } else if (zestArv) {
+      primary = zestArv;
+      low = p.arv_low_zestimate ?? Math.round(zestArv * 0.93);
+      high = p.arv_high_zestimate ?? Math.round(zestArv * 1.07);
+      source = "zestimate_only";
+    }
+
+    p.arv_estimate = primary;
+    p.arv_low = low;
+    p.arv_high = high;
+    p.arv_source = source;
+
+    $("arvMain").textContent = fmt(primary);
+    $("arvRange").textContent = (low && high)
+      ? `Range: ${fmt(low)} – ${fmt(high)}`
+      : "Range: –";
+
+    $("arvSource").textContent = `Source: ${
+      source === "weighted_comps" ? "Weighted Comps" :
+      source === "zestimate_only" ? "Zestimate Only" :
+      "Unknown"
+    }`;
+  }
+
+  // ==============================
   // UI POPULATION
   // ==============================
   function populateUI(p){
@@ -874,17 +919,24 @@
 
     $("propSummary").innerHTML = pills.join("");
 
-    // Primary ARV
-    $("arvMain").textContent = fmt(p.arv_estimate);
-    $("arvRange").textContent = (p.arv_low && p.arv_high)
-      ? `Range: ${fmt(p.arv_low)} – ${fmt(p.arv_high)}`
+    // Main ARV & split cards
+    $("arvComps").textContent = fmt(p.arv_estimate_comps);
+    $("arvCompsRange").textContent = (p.arv_low_comps && p.arv_high_comps)
+      ? `Range: ${fmt(p.arv_low_comps)} – ${fmt(p.arv_high_comps)}`
       : "Range: –";
 
-    $("arvSource").textContent = `Source: ${
-      p.arv_source === "weighted_comps" ? "Weighted Comps" :
-      p.arv_source === "zestimate_only" ? "Zestimate Only" :
-      (p.arv_source || "Unknown")
-    }`;
+    const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
+      ? p.arv_estimate_zestimate
+      : p.zestimate;
+
+    $("arvZest").textContent = fmt(zestArv);
+    $("arvZestRange").textContent = (p.arv_low_zestimate && p.arv_high_zestimate)
+      ? `Range: ${fmt(p.arv_low_zestimate)} – ${fmt(p.arv_high_zestimate)}`
+      : "Range: –";
+
+    $("exitStrategy").textContent = p.exit_strategy
+      ? p.exit_strategy.replace(/_/g," ")
+      : "–";
 
     if(p.equity_amount != null){
       $("equityAmount").textContent = `Equity: ${fmt(p.equity_amount)}`;
@@ -913,25 +965,6 @@
       $("lastSoldPrice").textContent = "Last Sold Price: –";
     }
 
-    // Split ARVs
-    $("arvComps").textContent = fmt(p.arv_estimate_comps);
-    $("arvCompsRange").textContent = (p.arv_low_comps && p.arv_high_comps)
-      ? `Range: ${fmt(p.arv_low_comps)} – ${fmt(p.arv_high_comps)}`
-      : "Range: –";
-
-    const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
-      ? p.arv_estimate_zestimate
-      : p.zestimate;
-
-    $("arvZest").textContent = fmt(zestArv);
-    $("arvZestRange").textContent = (p.arv_low_zestimate && p.arv_high_zestimate)
-      ? `Range: ${fmt(p.arv_low_zestimate)} – ${fmt(p.arv_high_zestimate)}`
-      : "Range: –";
-
-    $("exitStrategy").textContent = p.exit_strategy
-      ? p.exit_strategy.replace(/_/g," ")
-      : "–";
-
     // MAOs – COMPS
     $("wCosComps").textContent = fmt(p.wholesale_mao_cosmetic_comps);
     $("wMidComps").textContent = fmt(p.wholesale_mao_mid_comps);
@@ -957,6 +990,8 @@
       ? p.comps_top5
       : (Array.isArray(p.comps_top3) ? p.comps_top3 : []);
 
+    window.__sfComps = comps;
+
     comps.slice(0,5).forEach((c, idx) => {
       if (!c) return;
       const wrap = document.createElement("div");
@@ -970,21 +1005,32 @@
       if (c.sqft) metaBits.push(`📐 ${Number(c.sqft).toLocaleString()} sq ft`);
       if (c.price != null) metaBits.push(`💵 ${fmt(c.price)}`);
 
+      // More aggressive fallbacks for last sold info
+      let soldDate =
+        c.last_sale_date ||
+        c.dateSold ||
+        c.soldDate ||
+        c.onMarketDate ||
+        null;
+      let soldPrice =
+        (c.last_sale_price != null ? c.last_sale_price :
+        (c.lastSoldPrice != null ? c.lastSoldPrice : null));
+
       let lastSold = "";
-      if (c.last_sale_date) {
-        let d = c.last_sale_date;
-        if (d.length >= 10) d = d.slice(0,10);
+      if (soldDate) {
+        let d = soldDate;
+        if (typeof d === "string" && d.length >= 10) d = d.slice(0,10);
         lastSold += `Last sold: ${d}`;
       }
-      if (c.last_sale_price != null) {
-        lastSold += (lastSold ? " · " : "") + fmt(c.last_sale_price);
+      if (soldPrice != null) {
+        lastSold += (lastSold ? " · " : "") + fmt(soldPrice);
       }
 
       const photosHtml = Array.isArray(c.images) && c.images.length
         ? `<div class="comp-photos">
-             ${c.images.slice(0,5).map(u => `
+             ${c.images.slice(0, 10).map((u, photoIdx) => `
                <div class="comp-photo-thumb">
-                 <img src="${u}" alt="Comp photo" />
+                 <img src="${u}" alt="Comp photo ${photoIdx + 1}" />
                </div>`).join("")}
            </div>`
         : "";
@@ -1008,6 +1054,15 @@
       `;
       compsEl.appendChild(wrap);
     });
+
+    // Wire up toggle listeners for ARV recompute
+    const toggles = compsEl.querySelectorAll('input[type="checkbox"][data-comp-index]');
+    toggles.forEach(cb => {
+      cb.addEventListener("change", recalcCompsArvFromSelection);
+    });
+
+    // Finally refresh the main ARV summary
+    refreshArvSummary(p);
   }
 
   // ==============================
@@ -1157,6 +1212,62 @@
   }
 
   // ==============================
+  // RE-CALC ARV WHEN COMPS TOGGLED
+  // ==============================
+  function recalcCompsArvFromSelection(){
+    const p = window.__sfPayload;
+    if (!p) return;
+
+    const comps = Array.isArray(p.comps_top5) && p.comps_top5.length
+      ? p.comps_top5
+      : (Array.isArray(p.comps_top3) ? p.comps_top3 : []);
+
+    if (!comps.length) return;
+
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][data-comp-index]');
+    let sumW = 0;
+    let sumWV = 0;
+
+    checkboxes.forEach(cb => {
+      const idxStr = cb.getAttribute("data-comp-index");
+      const idx = Number(idxStr);
+      if (!Number.isFinite(idx)) return;
+      const comp = comps[idx];
+      if (!comp) return;
+
+      const price = (typeof comp.price === "number"
+        ? comp.price
+        : (typeof comp.weighted_value === "number" ? comp.weighted_value : null));
+      const w = (typeof comp.weight === "number" ? comp.weight : 1);
+
+      if (cb.checked && price != null) {
+        sumW += w;
+        sumWV += w * price;
+      }
+    });
+
+    if (sumW <= 0) {
+      p.arv_estimate_comps = null;
+      p.arv_low_comps = null;
+      p.arv_high_comps = null;
+    } else {
+      const newArv = Math.round(sumWV / sumW);
+      p.arv_estimate_comps = newArv;
+      p.arv_low_comps = Math.round(newArv * 0.93);
+      p.arv_high_comps = Math.round(newArv * 1.07);
+    }
+
+    $("arvComps").textContent = fmt(p.arv_estimate_comps);
+    $("arvCompsRange").textContent =
+      p.arv_low_comps && p.arv_high_comps
+        ? `Range: ${fmt(p.arv_low_comps)} – ${fmt(p.arv_high_comps)}`
+        : "Range: –";
+
+    // Update main ARV card to reflect new comps selection
+    refreshArvSummary(p);
+  }
+
+  // ==============================
   // INIT
   // ==============================
   window.addEventListener("DOMContentLoaded", async () => {
@@ -1179,6 +1290,7 @@
     }
   });
 </script>
+
 
 
   
