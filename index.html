@@ -622,579 +622,565 @@
         </div>
         <!-- ========================================= -->
         
+<script>
+  function $(id){return document.getElementById(id);}
 
+  function fmt(n){
+    if(n === null || n === undefined || n === "" || isNaN(n)) return "$–";
+    return Number(n).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+  }
 
-  <script>
-    function $(id){return document.getElementById(id);}
+  function getParam(name){
+    const url = new URL(window.location.href);
+    const val = url.searchParams.get(name);
+    return val && val !== "null" && val !== "undefined" ? val : "";
+  }
 
-    function fmt(n){
-      if(n === null || n === undefined || n === "" || isNaN(n)) return "$–";
-      return Number(n).toLocaleString("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0});
+  function numParam(name){
+    const v = getParam(name);
+    if(!v) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function numFromInput(id, fallback){
+    const el = $(id);
+    if(!el) return fallback;
+    const v = el.value.trim();
+    if(!v) return fallback;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function getDocIdFromUrl(){
+    const url = new URL(window.location.href);
+    const id = url.searchParams.get("id");
+    return id && id !== "null" && id !== "undefined" ? id : null;
+  }
+
+  // ==============================
+  // BUILD PAYLOAD FROM URL PARAMS (LEGACY FALLBACK)
+  // ==============================
+  function buildPayloadFromParams(){
+    const p = {};
+
+    // Subject basics
+    p.address   = getParam("address");
+    p.city      = getParam("city");
+    p.state     = getParam("state");
+    p.zipcode   = getParam("zipcode");
+    p.bedrooms  = numParam("bedrooms");
+    p.bathrooms = numParam("bathrooms");
+    p.sqft      = numParam("sqft");
+    p.year_built= numParam("year_built");
+    p.zestimate = numParam("zestimate");
+
+    // subject property image (main photo + gallery)
+    p.subject_image_url = getParam("subject_image_url");
+    p.subject_images = [];
+
+    const subjJson =
+      getParam("subject_images_json") ||
+      getParam("subject_image_urls") ||
+      null;
+
+    if (subjJson) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(subjJson));
+        if (Array.isArray(parsed)) {
+          p.subject_images = parsed.filter(Boolean);
+        }
+      } catch(e){}
+    }
+    if (!p.subject_images.length) {
+      for (let i = 1; i <= 20; i++) {
+        const u = getParam(`subject_image_${i}`);
+        if (u) p.subject_images.push(u);
+      }
     }
 
-    function getParam(name){
-      const url = new URL(window.location.href);
-      const val = url.searchParams.get(name);
-      return val && val !== "null" && val !== "undefined" ? val : "";
-    }
+    // Primary ARV
+    p.arv_source         = getParam("arv_source");
+    p.arv_estimate       = numParam("arv_estimate");
+    p.arv_low            = numParam("arv_low");
+    p.arv_high           = numParam("arv_high");
 
-    function numParam(name){
-      const v = getParam(name);
-      if(!v) return null;
-      const n = Number(v);
-      return Number.isFinite(n) ? n : null;
-    }
+    // ARV split
+    p.arv_estimate_comps = numParam("arv_estimate_comps");
+    p.arv_low_comps      = numParam("arv_low_comps");
+    p.arv_high_comps     = numParam("arv_high_comps");
 
-    function numFromInput(id, fallback){
-      const el = $(id);
-      if(!el) return fallback;
-      const v = el.value.trim();
-      if(!v) return fallback;
-      const n = Number(v);
-      return Number.isFinite(n) ? n : fallback;
-    }
+    // Zestimate ARV split
+    p.arv_estimate_zestimate = numParam("arv_estimate_zestimate");
+    p.arv_low_zestimate      = numParam("arv_low_zestimate");
+    p.arv_high_zestimate     = numParam("arv_high_zestimate");
 
-    // Build the payload object purely from URL params
-    function buildPayloadFromParams(){
-      const p = {};
+    // Equity + last sale + Zillow URL
+    p.equity_amount      = numParam("equity_amount");
+    p.equity_percent     = numParam("equity_percent");
+    p.ownership_years    = numParam("ownership_years");
+    p.last_sale_date     = getParam("last_sale_date");
+    p.last_sale_price    = numParam("last_sale_price");
+    p.zillow_url         = getParam("zillow_url") || getParam("subject_zillow_url");
 
-      // Subject basics
-      p.address   = getParam("address");
-      p.city      = getParam("city");
-      p.state     = getParam("state");
-      p.zipcode   = getParam("zipcode");
-      p.bedrooms  = numParam("bedrooms");
-      p.bathrooms = numParam("bathrooms");
-      p.sqft      = numParam("sqft");
-      p.year_built= numParam("year_built");
-      p.zestimate = numParam("zestimate");
+    p.exit_strategy      = getParam("exit_strategy");
 
-      // subject property image (main photo + gallery)
-      p.subject_image_url = getParam("subject_image_url");
-      p.subject_images = [];
+    // MAOs - COMPS
+    p.wholesale_mao_cosmetic_comps = numParam("wholesale_mao_cosmetic_comps");
+    p.wholesale_mao_mid_comps      = numParam("wholesale_mao_mid_comps");
+    p.wholesale_mao_full_comps     = numParam("wholesale_mao_full_comps");
 
-      // Support JSON-encoded array OR numbered params for subject photos
-      const subjJson =
-        getParam("subject_images_json") ||
-        getParam("subject_image_urls") ||
+    p.novation_mao_cosmetic_85_comps = numParam("novation_mao_cosmetic_85_comps");
+    p.novation_mao_mid_85_comps      = numParam("novation_mao_mid_85_comps");
+    p.novation_mao_full_85_comps     = numParam("novation_mao_full_85_comps");
+
+    // MAOs - ZESTIMATE
+    p.wholesale_mao_cosmetic_zestimate = numParam("wholesale_mao_cosmetic_zestimate");
+    p.wholesale_mao_mid_zestimate      = numParam("wholesale_mao_mid_zestimate");
+    p.wholesale_mao_full_zestimate     = numParam("wholesale_mao_full_zestimate");
+
+    p.novation_mao_cosmetic_85_zestimate = numParam("novation_mao_cosmetic_85_zestimate");
+    p.novation_mao_mid_85_zestimate      = numParam("novation_mao_mid_85_zestimate");
+    p.novation_mao_full_85_zestimate     = numParam("novation_mao_full_85_zestimate");
+
+    // Comps (for legacy URL mode)
+    const comps = [];
+    for (let i = 1; i <= 5; i++) {
+      const url = getParam(`comp${i}`);
+      if (!url) continue;
+
+      let compImages = [];
+      const imgJson =
+        getParam(`comp${i}_images_json`) ||
+        getParam(`comp${i}_image_urls`) ||
+        getParam(`comp${i}_images`) ||
         null;
-      if (subjJson) {
+      if (imgJson) {
         try {
-          const parsed = JSON.parse(decodeURIComponent(subjJson));
+          const parsed = JSON.parse(decodeURIComponent(imgJson));
           if (Array.isArray(parsed)) {
-            p.subject_images = parsed.filter(Boolean);
+            compImages = parsed.filter(Boolean);
           }
         } catch(e){}
       }
-      if (!p.subject_images.length) {
-        for (let i = 1; i <= 20; i++) {
-          const u = getParam(`subject_image_${i}`);
-          if (u) p.subject_images.push(u);
+      if (!compImages.length) {
+        for (let k = 1; k <= 10; k++) {
+          const u = getParam(`comp${i}_image${k}`);
+          if (u) compImages.push(u);
         }
       }
 
-      // Primary ARV
-      p.arv_source         = getParam("arv_source");
-      p.arv_estimate       = numParam("arv_estimate");
-      p.arv_low            = numParam("arv_low");
-      p.arv_high           = numParam("arv_high");
+      const comp = {
+        address:        getParam(`comp${i}_address`) || null,
+        city:           getParam(`comp${i}_city`) || null,
+        state:          getParam(`comp${i}_state`) || null,
+        zipcode:        getParam(`comp${i}_zipcode`) || null,
+        bedrooms:       numParam(`comp${i}_bedrooms`),
+        bathrooms:      numParam(`comp${i}_bathrooms`),
+        sqft:           numParam(`comp${i}_sqft`),
+        price:          numParam(`comp${i}_price`),
+        last_sale_date: getParam(`comp${i}_last_sale_date`) || null,
+        last_sale_price:numParam(`comp${i}_last_sale_price`),
+        zillow_url:     url,
+        images:         compImages
+      };
+      comps.push(comp);
+    }
+    p.comps_top3 = comps;
+    p.comps_top5 = comps;
 
-      // ARV split
-      p.arv_estimate_comps = numParam("arv_estimate_comps");
-      p.arv_low_comps      = numParam("arv_low_comps");
-      p.arv_high_comps     = numParam("arv_high_comps");
+    return p;
+  }
 
-      // Zestimate ARV split
-      p.arv_estimate_zestimate = numParam("arv_estimate_zestimate");
-      p.arv_low_zestimate      = numParam("arv_low_zestimate");
-      p.arv_high_zestimate     = numParam("arv_high_zestimate");
+  // ==============================
+  // UI POPULATION
+  // ==============================
+  function populateUI(p){
+    window.__sfPayload = p || {};
 
-      // Equity + ownership + last sale + Zillow URL
-      p.equity_amount      = numParam("equity_amount");
-      p.equity_percent     = numParam("equity_percent");
-      p.ownership_years    = numParam("ownership_years");
-      p.last_sale_date     = getParam("last_sale_date");
-      p.last_sale_price    = numParam("last_sale_price");
+    const mainPhotoEl = $("subjectMainPhoto");
+    const thumbsWrap  = $("subjectThumbs");
 
-      // subject property Zillow link (supporting two possible param names)
-      p.zillow_url         = getParam("zillow_url") || getParam("subject_zillow_url");
-
-      p.exit_strategy      = getParam("exit_strategy");
-
-      // MAOs - COMPS
-      p.wholesale_mao_cosmetic_comps = numParam("wholesale_mao_cosmetic_comps");
-      p.wholesale_mao_mid_comps      = numParam("wholesale_mao_mid_comps");
-      p.wholesale_mao_full_comps     = numParam("wholesale_mao_full_comps");
-
-      p.novation_mao_cosmetic_85_comps = numParam("novation_mao_cosmetic_85_comps");
-      p.novation_mao_mid_85_comps      = numParam("novation_mao_mid_85_comps");
-      p.novation_mao_full_85_comps     = numParam("novation_mao_full_85_comps");
-
-      // MAOs - ZESTIMATE
-      p.wholesale_mao_cosmetic_zestimate = numParam("wholesale_mao_cosmetic_zestimate");
-      p.wholesale_mao_mid_zestimate      = numParam("wholesale_mao_mid_zestimate");
-      p.wholesale_mao_full_zestimate     = numParam("wholesale_mao_full_zestimate");
-
-      p.novation_mao_cosmetic_85_zestimate = numParam("novation_mao_cosmetic_85_zestimate");
-      p.novation_mao_mid_85_zestimate      = numParam("novation_mao_mid_85_zestimate");
-      p.novation_mao_full_85_zestimate     = numParam("novation_mao_full_85_zestimate");
-
-      // Comps from simple params: comp1..comp5 plus optional meta, photos, last-sold
-      const comps = [];
-      for (let i = 1; i <= 5; i++) {
-        const url = getParam(`comp${i}`);
-        if (!url) continue;
-
-        // images for each comp (JSON or numbered)
-        let compImages = [];
-        const imgJson =
-          getParam(`comp${i}_images_json`) ||
-          getParam(`comp${i}_image_urls`) ||
-          getParam(`comp${i}_images`) ||
-          null;
-        if (imgJson) {
-          try {
-            const parsed = JSON.parse(decodeURIComponent(imgJson));
-            if (Array.isArray(parsed)) {
-              compImages = parsed.filter(Boolean);
-            }
-          } catch(e){}
-        }
-        if (!compImages.length) {
-          for (let k = 1; k <= 10; k++) {
-            const u = getParam(`comp${i}_image${k}`);
-            if (u) compImages.push(u);
-          }
-        }
-
-        const comp = {
-          address:        getParam(`comp${i}_address`) || null,
-          city:           getParam(`comp${i}_city`) || null,
-          state:          getParam(`comp${i}_state`) || null,
-          zipcode:        getParam(`comp${i}_zipcode`) || null,
-          bedrooms:       numParam(`comp${i}_bedrooms`),
-          bathrooms:      numParam(`comp${i}_bathrooms`),
-          sqft:           numParam(`comp${i}_sqft`),
-          price:          numParam(`comp${i}_price`),
-          last_sale_date: getParam(`comp${i}_last_sale_date`) || null,
-          last_sale_price:numParam(`comp${i}_last_sale_price`),
-          zillow_url:     url,
-          images:         compImages
-        };
-        comps.push(comp);
-      }
-      p.comps_top3 = comps;
-
-      return p;
+    let subjectImages = [];
+    if (Array.isArray(p.subject_images) && p.subject_images.length) {
+      subjectImages = p.subject_images.slice();
+    } else if (p.subject_image_url) {
+      subjectImages = [p.subject_image_url];
     }
 
-    // Prefill the left-side address fields plus auto-populate the right side
-    function prefillFromUrl(){
-      const full = getParam("full_address_1") || getParam("fullAddress") || "";
-      const a1   = getParam("address1") || getParam("street_address") || "";
-      const city = getParam("city") || "";
-      const state= getParam("state") || getParam("state_province") || "";
-      const zip  = getParam("postal_code") || getParam("zip") || "";
-
-      if(full) $("full_address").value = full;
-      if(a1)   $("address1").value = a1;
-      if(city) $("city").value = city;
-      if(state)$("state").value = state;
-      if(zip)  $("zip").value = zip;
-
-      const payload = buildPayloadFromParams();
-      const hasData = payload && (payload.arv_estimate || payload.zestimate || payload.arv_estimate_comps);
-
-      if(hasData){
-        populateUI(payload);
-        const status = $("status");
-        if(status){
-          status.textContent = "ARV + MAOs loaded from URL.";
-          status.className = "status-bar status-success";
-        }
-      }
+    if (!subjectImages.length) {
+      subjectImages = ["https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg"];
     }
 
-    // "Run" now just reloads from URL again
-    function runFromUrl(){
-      const payload = buildPayloadFromParams();
-      const status = $("status");
-      const hasData = payload && (payload.arv_estimate || payload.zestimate || payload.arv_estimate_comps);
+    if (mainPhotoEl) {
+      mainPhotoEl.src = subjectImages[0];
+      mainPhotoEl.alt = "Property";
+    }
 
-      if(!hasData){
-        status.textContent = "No ARV data found in URL params. Make sure your worker built the full arv_calc_url.";
-        status.className = "status-bar status-error";
-        return;
+    if (thumbsWrap) {
+      thumbsWrap.innerHTML = "";
+      subjectImages.forEach((url, idx) => {
+        const thumb = document.createElement("div");
+        thumb.className = "photo-thumb" + (idx === 0 ? " active" : "");
+        thumb.dataset.index = String(idx);
+        thumb.innerHTML = `<img src="${url}" alt="Property photo ${idx+1}" />`;
+        thumb.addEventListener("click", () => {
+          if (mainPhotoEl) mainPhotoEl.src = url;
+          const allThumbs = thumbsWrap.querySelectorAll(".photo-thumb");
+          allThumbs.forEach(t => t.classList.remove("active"));
+          thumb.classList.add("active");
+        });
+        thumbsWrap.appendChild(thumb);
+      });
+    }
+
+    // Property pills
+    const pills = [];
+    if(p.address || p.city || p.state || p.zipcode){
+      const line = [p.address, p.city, p.state, p.zipcode].filter(Boolean).join(", ");
+      pills.push(`<div class="pill">📍 ${line}</div>`);
+    }
+    if(p.bedrooms != null || p.bathrooms != null){
+      pills.push(`<div class="pill">🛏 ${p.bedrooms ?? "–"} / 🛁 ${p.bathrooms ?? "–"}</div>`);
+    }
+    if(p.sqft){
+      pills.push(`<div class="pill">📐 ${Number(p.sqft).toLocaleString()} sq ft</div>`);
+    }
+    if(p.year_built){
+      pills.push(`<div class="pill">📆 Built ${p.year_built}</div>`);
+    }
+    if(p.zillow_url || p.subject_zillow_url){
+      const link = p.zillow_url || p.subject_zillow_url;
+      pills.push(
+        `<div class="pill">
+          <a href="${link}" target="_blank" style="text-decoration:none;color:inherit;">
+            🔗 View on Zillow
+          </a>
+        </div>`
+      );
+    }
+    if(p.ownership_years != null){
+      const yrs = Number(p.ownership_years);
+      pills.push(`<div class="pill">📅 Owned ~${yrs.toFixed(1)} yrs</div>`);
+    }
+    if(p.last_sale_date){
+      let saleLabel = p.last_sale_date;
+      if(saleLabel.length >= 10) saleLabel = saleLabel.slice(0,10);
+      pills.push(`<div class="pill">🧾 Last sold: ${saleLabel}</div>`);
+    }
+    if(p.last_sale_price != null){
+      pills.push(`<div class="pill">💵 Last sale: ${fmt(p.last_sale_price)}</div>`);
+    }
+
+    $("propSummary").innerHTML = pills.join("");
+
+    // Primary ARV
+    $("arvMain").textContent = fmt(p.arv_estimate);
+    $("arvRange").textContent = (p.arv_low && p.arv_high)
+      ? `Range: ${fmt(p.arv_low)} – ${fmt(p.arv_high)}`
+      : "Range: –";
+
+    $("arvSource").textContent = `Source: ${
+      p.arv_source === "weighted_comps" ? "Weighted Comps" :
+      p.arv_source === "zestimate_only" ? "Zestimate Only" :
+      (p.arv_source || "Unknown")
+    }`;
+
+    if(p.equity_amount != null){
+      $("equityAmount").textContent = `Equity: ${fmt(p.equity_amount)}`;
+    } else {
+      $("equityAmount").textContent = "Equity: –";
+    }
+
+    if(p.equity_percent != null){
+      const pct = Number(p.equity_percent).toFixed(1);
+      $("equityPercent").textContent = `Equity %: ${pct}%`;
+    } else {
+      $("equityPercent").textContent = "Equity %: –";
+    }
+
+    if (p.last_sale_date) {
+      let saleLabel = p.last_sale_date;
+      if (saleLabel.length >= 10) saleLabel = saleLabel.slice(0, 10);
+      $("lastSoldDate").textContent = `Last Sold: ${saleLabel}`;
+    } else {
+      $("lastSoldDate").textContent = "Last Sold: –";
+    }
+
+    if (p.last_sale_price != null) {
+      $("lastSoldPrice").textContent = `Last Sold Price: ${fmt(p.last_sale_price)}`;
+    } else {
+      $("lastSoldPrice").textContent = "Last Sold Price: –";
+    }
+
+    // Split ARVs
+    $("arvComps").textContent = fmt(p.arv_estimate_comps);
+    $("arvCompsRange").textContent = (p.arv_low_comps && p.arv_high_comps)
+      ? `Range: ${fmt(p.arv_low_comps)} – ${fmt(p.arv_high_comps)}`
+      : "Range: –";
+
+    const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
+      ? p.arv_estimate_zestimate
+      : p.zestimate;
+
+    $("arvZest").textContent = fmt(zestArv);
+    $("arvZestRange").textContent = (p.arv_low_zestimate && p.arv_high_zestimate)
+      ? `Range: ${fmt(p.arv_low_zestimate)} – ${fmt(p.arv_high_zestimate)}`
+      : "Range: –";
+
+    $("exitStrategy").textContent = p.exit_strategy
+      ? p.exit_strategy.replace(/_/g," ")
+      : "–";
+
+    // MAOs – COMPS
+    $("wCosComps").textContent = fmt(p.wholesale_mao_cosmetic_comps);
+    $("wMidComps").textContent = fmt(p.wholesale_mao_mid_comps);
+    $("wFullComps").textContent = fmt(p.wholesale_mao_full_comps);
+
+    $("nCos85Comps").textContent = fmt(p.novation_mao_cosmetic_85_comps);
+    $("nMid85Comps").textContent = fmt(p.novation_mao_mid_85_comps);
+    $("nFull85Comps").textContent = fmt(p.novation_mao_full_85_comps);
+
+    // MAOs – ZESTIMATE
+    $("wCosZest").textContent = fmt(p.wholesale_mao_cosmetic_zestimate);
+    $("wMidZest").textContent = fmt(p.wholesale_mao_mid_zestimate);
+    $("wFullZest").textContent = fmt(p.wholesale_mao_full_zestimate);
+
+    $("nCos85Zest").textContent = fmt(p.novation_mao_cosmetic_85_zestimate);
+    $("nMid85Zest").textContent = fmt(p.novation_mao_mid_85_zestimate);
+    $("nFull85Zest").textContent = fmt(p.novation_mao_full_85_zestimate);
+
+    // Comps list
+    const compsEl = $("comps");
+    compsEl.innerHTML = "";
+    const comps = Array.isArray(p.comps_top5) && p.comps_top5.length
+      ? p.comps_top5
+      : (Array.isArray(p.comps_top3) ? p.comps_top3 : []);
+
+    comps.slice(0,5).forEach((c, idx) => {
+      if (!c) return;
+      const wrap = document.createElement("div");
+      wrap.className = "comp-item";
+
+      const addrLine = [c.address, c.city, c.state, c.zipcode].filter(Boolean).join(", ");
+      const metaBits = [];
+      if (c.bedrooms != null || c.bathrooms != null) {
+        metaBits.push(`🛏 ${c.bedrooms ?? "–"} / 🛁 ${c.bathrooms ?? "–"}`);
+      }
+      if (c.sqft) metaBits.push(`📐 ${Number(c.sqft).toLocaleString()} sq ft`);
+      if (c.price != null) metaBits.push(`💵 ${fmt(c.price)}`);
+
+      let lastSold = "";
+      if (c.last_sale_date) {
+        let d = c.last_sale_date;
+        if (d.length >= 10) d = d.slice(0,10);
+        lastSold += `Last sold: ${d}`;
+      }
+      if (c.last_sale_price != null) {
+        lastSold += (lastSold ? " · " : "") + fmt(c.last_sale_price);
       }
 
+      const photosHtml = Array.isArray(c.images) && c.images.length
+        ? `<div class="comp-photos">
+             ${c.images.slice(0,5).map(u => `
+               <div class="comp-photo-thumb">
+                 <img src="${u}" alt="Comp photo" />
+               </div>`).join("")}
+           </div>`
+        : "";
+
+      const linkHtml = c.zillow_url
+        ? `<div class="comp-link"><a href="${c.zillow_url}" target="_blank">View on Zillow</a></div>`
+        : "";
+
+      wrap.innerHTML = `
+        <div class="comp-line-top">
+          <div class="comp-addr">${addrLine || "Comp ${idx+1}"}</div>
+          <label class="comp-toggle">
+            <input type="checkbox" data-comp-index="${idx}" checked />
+            Include in ARV
+          </label>
+        </div>
+        <div class="comp-meta">${metaBits.join(" · ") || ""}</div>
+        <div class="comp-meta">${lastSold}</div>
+        ${photosHtml}
+        ${linkHtml}
+      `;
+      compsEl.appendChild(wrap);
+    });
+  }
+
+  // ==============================
+  // LOAD FROM DOC (KV) OR URL PARAMS
+  // ==============================
+  async function loadFromDocId(showStatus){
+    const statusEl = $("status");
+    const id = getDocIdFromUrl();
+    if (!id) return false;
+
+    try {
+      if (showStatus && statusEl) {
+        statusEl.textContent = "Loading ARV data from Summit Flow document...";
+        statusEl.className = "status-bar";
+      }
+
+      const res = await fetch("https://arvcalculator.thesummitgroup300.workers.dev/doc?id=" + encodeURIComponent(id));
+      if (!res.ok) {
+        if (statusEl) {
+          statusEl.textContent = "Failed to load ARV doc (maybe expired). Falling back to URL params.";
+          statusEl.className = "status-bar status-error";
+        }
+        return false;
+      }
+
+      const payload = await res.json();
       populateUI(payload);
-      status.textContent = "ARV + MAOs reloaded from URL.";
-      status.className = "status-bar status-success";
+
+      if (statusEl) {
+        statusEl.textContent = "ARV + MAOs loaded from Summit Flow document.";
+        statusEl.className = "status-bar status-success";
+      }
+      // Fill left-side address fields from payload
+      if (payload.address) $("address1").value = payload.address;
+      if (payload.city) $("city").value = payload.city;
+      if (payload.state) $("state").value = payload.state;
+      if (payload.zipcode) $("zip").value = payload.zipcode;
+      if (payload.full_address_1) $("full_address").value = payload.full_address_1;
+
+      return true;
+    } catch (e) {
+      if (statusEl) {
+        statusEl.textContent = "Error loading ARV doc. Check console / URL.";
+        statusEl.className = "status-bar status-error";
+      }
+      console.error("Error loading doc:", e);
+      return false;
     }
+  }
 
-    function populateUI(p){
-      // keep payload globally for recalcs
-      window.__sfPayload = p;
+  function prefillFromUrl(){
+    const full = getParam("full_address_1") || getParam("fullAddress") || "";
+    const a1   = getParam("address1") || getParam("street_address") || "";
+    const city = getParam("city") || "";
+    const state= getParam("state") || getParam("state_province") || "";
+    const zip  = getParam("postal_code") || getParam("zip") || "";
 
-      // Subject photo carousel under the button
-      const mainPhotoEl = $("subjectMainPhoto");
-      const thumbsWrap  = $("subjectThumbs");
+    if(full) $("full_address").value = full;
+    if(a1)   $("address1").value = a1;
+    if(city) $("city").value = city;
+    if(state)$("state").value = state;
+    if(zip)  $("zip").value = zip;
 
-      // Build list of subject images (all from Zillow)
-      let subjectImages = [];
-      if (Array.isArray(p.subject_images) && p.subject_images.length) {
-        subjectImages = p.subject_images.slice();
-      } else if (p.subject_image_url) {
-        subjectImages = [p.subject_image_url];
-      }
+    const payload = buildPayloadFromParams();
+    const hasData = payload && (payload.arv_estimate || payload.zestimate || payload.arv_estimate_comps);
 
-      if (!subjectImages.length) {
-        // fallback to Summit Flow logo
-        subjectImages = ["https://storage.googleapis.com/msgsndr/KXKcQKt2A0sR0k8EkYjP/media/6910dca4f301050d1ccb0a0c.jpg"];
-      }
-
-      if (mainPhotoEl) {
-        mainPhotoEl.src = subjectImages[0];
-        mainPhotoEl.alt = "Property";
-      }
-
-      if (thumbsWrap) {
-        thumbsWrap.innerHTML = "";
-        subjectImages.forEach((url, idx) => {
-          const thumb = document.createElement("div");
-          thumb.className = "photo-thumb" + (idx === 0 ? " active" : "");
-          thumb.dataset.index = String(idx);
-          thumb.innerHTML = `<img src="${url}" alt="Property photo ${idx+1}" />`;
-          thumb.addEventListener("click", () => {
-            if (mainPhotoEl) {
-              mainPhotoEl.src = url;
-            }
-            // toggle active state
-            const allThumbs = thumbsWrap.querySelectorAll(".photo-thumb");
-            allThumbs.forEach(t => t.classList.remove("active"));
-            thumb.classList.add("active");
-          });
-          thumbsWrap.appendChild(thumb);
-        });
-      }
-
-      // Property pills
-      const pills = [];
-      if(p.address || p.city || p.state || p.zipcode){
-        const line = [p.address, p.city, p.state, p.zipcode].filter(Boolean).join(", ");
-        pills.push(`<div class="pill">📍 ${line}</div>`);
-      }
-      if(p.bedrooms != null || p.bathrooms != null){
-        pills.push(`<div class="pill">🛏 ${p.bedrooms ?? "–"} / 🛁 ${p.bathrooms ?? "–"}</div>`);
-      }
-      if(p.sqft){
-        pills.push(`<div class="pill">📐 ${Number(p.sqft).toLocaleString()} sq ft</div>`);
-      }
-      if(p.year_built){
-        pills.push(`<div class="pill">📆 Built ${p.year_built}</div>`);
-      }
-
-      // 🔗 subject property Zillow link pill
-      if(p.zillow_url){
-        pills.push(
-          `<div class="pill">
-            <a href="${p.zillow_url}" target="_blank" style="text-decoration:none;color:inherit;">
-              🔗 View on Zillow
-            </a>
-          </div>`
-        );
-      }
-
-      // Ownership / last-sale pills
-      if(p.ownership_years != null){
-        const yrs = Number(p.ownership_years);
-        pills.push(`<div class="pill">📅 Owned ~${yrs.toFixed(1)} yrs</div>`);
-      }
-      if(p.last_sale_date){
-        let saleLabel = p.last_sale_date;
-        if(saleLabel.length >= 10) saleLabel = saleLabel.slice(0,10);
-        pills.push(`<div class="pill">🧾 Last sold: ${saleLabel}</div>`);
-      }
-      if(p.last_sale_price != null){
-        pills.push(`<div class="pill">💵 Last sale: ${fmt(p.last_sale_price)}</div>`);
-      }
-
-      $("propSummary").innerHTML = pills.join("");
-
-      // Primary ARV
-      $("arvMain").textContent = fmt(p.arv_estimate);
-      $("arvRange").textContent = (p.arv_low && p.arv_high)
-        ? `Range: ${fmt(p.arv_low)} – ${fmt(p.arv_high)}`
-        : "Range: –";
-
-      $("arvSource").textContent = `Source: ${
-        p.arv_source === "weighted_comps" ? "Weighted Comps" :
-        p.arv_source === "zestimate_only" ? "Zestimate Only" :
-        (p.arv_source || "Unknown")
-      }`;
-
-      // Equity + Equity %
-      if(p.equity_amount != null){
-        $("equityAmount").textContent = `Equity: ${fmt(p.equity_amount)}`;
-      } else {
-        $("equityAmount").textContent = "Equity: –";
-      }
-
-      if(p.equity_percent != null){
-        const pct = Number(p.equity_percent).toFixed(1);
-        $("equityPercent").textContent = `Equity %: ${pct}%`;
-      } else {
-        $("equityPercent").textContent = "Equity %: –";
-      }
-
-      // Last sold info
-      if (p.last_sale_date) {
-        let saleLabel = p.last_sale_date;
-        if (saleLabel.length >= 10) saleLabel = saleLabel.slice(0, 10);
-        $("lastSoldDate").textContent = `Last Sold: ${saleLabel}`;
-      } else {
-        $("lastSoldDate").textContent = "Last Sold: –";
-      }
-
-      if (p.last_sale_price != null) {
-        $("lastSoldPrice").textContent = `Last Sold Price: ${fmt(p.last_sale_price)}`;
-      } else {
-        $("lastSoldPrice").textContent = "Last Sold Price: –";
-      }
-
-      // Split ARVs
-      $("arvComps").textContent = fmt(p.arv_estimate_comps);
-      $("arvCompsRange").textContent = (p.arv_low_comps && p.arv_high_comps)
-        ? `Range: ${fmt(p.arv_low_comps)} – ${fmt(p.arv_high_comps)}`
-        : "Range: –";
-
-      // Prefer arv_estimate_zestimate, fall back to raw zestimate if needed
-      const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
-        ? p.arv_estimate_zestimate
-        : p.zestimate;
-
-      $("arvZest").textContent = fmt(zestArv);
-
-      $("arvZestRange").textContent = (p.arv_low_zestimate && p.arv_high_zestimate)
-        ? `Range: ${fmt(p.arv_low_zestimate)} – ${fmt(p.arv_high_zestimate)}`
-        : "Range: –";
-
-      // Exit strategy
-      $("exitStrategy").textContent = p.exit_strategy
-        ? p.exit_strategy.replace(/_/g," ")
-        : "–";
-
-      // Wholesale / Novation – COMPS
-      $("wCosComps").textContent = fmt(p.wholesale_mao_cosmetic_comps);
-      $("wMidComps").textContent = fmt(p.wholesale_mao_mid_comps);
-      $("wFullComps").textContent = fmt(p.wholesale_mao_full_comps);
-
-      $("nCos85Comps").textContent = fmt(p.novation_mao_cosmetic_85_comps);
-      $("nMid85Comps").textContent = fmt(p.novation_mao_mid_85_comps);
-      $("nFull85Comps").textContent = fmt(p.novation_mao_full_85_comps);
-
-      // Wholesale / Novation – ZESTIMATE
-      $("wCosZest").textContent = fmt(p.wholesale_mao_cosmetic_zestimate);
-      $("wMidZest").textContent = fmt(p.wholesale_mao_mid_zestimate);
-      $("wFullZest").textContent = fmt(p.wholesale_mao_full_zestimate);
-
-      $("nCos85Zest").textContent = fmt(p.novation_mao_cosmetic_85_zestimate);
-      $("nMid85Zest").textContent = fmt(p.novation_mao_mid_85_zestimate);
-      $("nFull85Zest").textContent = fmt(p.novation_mao_full_85_zestimate);
-
-      // Comps (up to 5) with photos, last-sold, and include toggles
-      const compsEl = $("comps");
-      compsEl.innerHTML = "";
-      const comps = Array.isArray(p.comps_top3) ? p.comps_top3 : [];
-      if (!comps.length) {
-        compsEl.innerHTML = `<div class="subtext">No comp URLs passed in URL.</div>`;
-      } else {
-        comps.forEach((c, idx) => {
-          const addr = [c.address, c.city, c.state, c.zipcode].filter(Boolean).join(", ");
-
-          const metaParts = [];
-          if (c.bedrooms != null || c.bathrooms != null) {
-            metaParts.push(`🛏 ${c.bedrooms ?? "–"} / 🛁 ${c.bathrooms ?? "–"}`);
-          }
-          if (c.sqft) {
-            metaParts.push(`📐 ${Number(c.sqft).toLocaleString()} sq ft`);
-          }
-          if (c.price) {
-            metaParts.push(`💰 ${fmt(c.price)}`);
-          }
-          if (c.last_sale_date) {
-            let d = c.last_sale_date;
-            if (d.length >= 10) d = d.slice(0, 10);
-            metaParts.push(`🧾 Last sold: ${d}`);
-          }
-          if (c.last_sale_price != null) {
-            metaParts.push(`💵 Last sale: ${fmt(c.last_sale_price)}`);
-          }
-
-          const url = c.zillow_url || "#";
-          const hasPhotos = Array.isArray(c.images) && c.images.length;
-
-          const div = document.createElement("div");
-          div.className = "comp-item";
-          div.dataset.compIndex = String(idx);
-          div.innerHTML = `
-            <div class="comp-line-top">
-              <div class="comp-addr">Comp ${idx+1}: ${addr || "No address in URL"}</div>
-              <div style="display:flex;align-items:center;gap:8px;">
-                ${url !== "#" ? `<a href="${url}" target="_blank" class="comp-link">View on Zillow ↗</a>` : ""}
-                <label class="comp-toggle">
-                  <input type="checkbox" class="comp-include" data-comp-index="${idx}" checked />
-                  <span>Include</span>
-                </label>
-              </div>
-            </div>
-            <div class="comp-meta">${metaParts.join(" · ") || ""}</div>
-            ${hasPhotos ? `
-              <div class="comp-photos">
-                ${c.images.slice(0,5).map((imgUrl, imgIdx) => `
-                  <div class="comp-photo-thumb">
-                    <img src="${imgUrl}" alt="Comp ${idx+1} photo ${imgIdx+1}" />
-                  </div>
-                `).join("")}
-              </div>
-            ` : ""}
-          `;
-          compsEl.appendChild(div);
-        });
-      }
-
-      // Store comps on payload for toggles + recompute
-      p.comps_top3 = comps;
-      setupCompToggleHandlers();
-    }
-
-    function recomputeCompsArv(){
-      const p = window.__sfPayload;
-      if (!p) return;
-
-      const comps = Array.isArray(p.comps_top3) ? p.comps_top3 : [];
-      if (!comps.length) return;
-
-      const checkboxes = document.querySelectorAll('.comp-include');
-      const includedPrices = [];
-
-      checkboxes.forEach(cb => {
-        const idx = Number(cb.getAttribute('data-comp-index'));
-        if (!cb.checked) return;
-        const comp = comps[idx];
-        if (!comp) return;
-        const price = Number(comp.price);
-        if (Number.isFinite(price) && price > 0) {
-          includedPrices.push(price);
-        }
-      });
-
-      if (!includedPrices.length) {
-        p.arv_estimate_comps = null;
-        p.arv_low_comps = null;
-        p.arv_high_comps = null;
-      } else {
-        const sum = includedPrices.reduce((a,b)=>a+b,0);
-        const avg = sum / includedPrices.length;
-        const low = Math.min(...includedPrices);
-        const high = Math.max(...includedPrices);
-        p.arv_estimate_comps = avg;
-        p.arv_low_comps = low;
-        p.arv_high_comps = high;
-      }
-
-      $("arvComps").textContent = fmt(p.arv_estimate_comps);
-      $("arvCompsRange").textContent =
-        (p.arv_low_comps && p.arv_high_comps)
-          ? `Range: ${fmt(p.arv_low_comps)} – ${fmt(p.arv_high_comps)}`
-          : "Range: –";
-
-      // Re-run MAO math using new comps ARV
-      recalcMaos();
-    }
-
-    function setupCompToggleHandlers(){
-      const toggles = document.querySelectorAll('.comp-include');
-      if (!toggles.length) return;
-
-      toggles.forEach(cb => {
-        cb.addEventListener('change', () => {
-          recomputeCompsArv();
-        });
-      });
-
-      // Do one initial compute so comps ARV/MAOs match any subset
-      recomputeCompsArv();
-    }
-
-    function recalcMaos(){
-      const p = window.__sfPayload;
-      if(!p) return;
-
-      const sqft = Number(p.sqft || 0);
-      if(!sqft || !Number.isFinite(sqft)) return;
-
-      const rateCos = numFromInput("rateCosmetic", 15);
-      const rateMid = numFromInput("rateMid", 30);
-      const rateFull = numFromInput("rateFull", 50);
-
-      const arvComps = p.arv_estimate_comps || p.arv_estimate || null;
-
-      const zestArv = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
-        ? p.arv_estimate_zestimate
-        : p.zestimate || null;
-
-      if(!arvComps && !zestArv) return;
-
-      const repairCos = sqft * rateCos;
-      const repairMid = sqft * rateMid;
-      const repairFull = sqft * rateFull;
-
-      function maoWholesale(arv, repair){ return arv * 0.70 - repair; }
-      function maoNov85(arv, repair){ return arv * 0.85 - repair; }
-
-      if(arvComps){
-        $("wCosComps").textContent   = fmt(maoWholesale(arvComps, repairCos));
-        $("wMidComps").textContent   = fmt(maoWholesale(arvComps, repairMid));
-        $("wFullComps").textContent  = fmt(maoWholesale(arvComps, repairFull));
-
-        $("nCos85Comps").textContent = fmt(maoNov85(arvComps, repairCos));
-        $("nMid85Comps").textContent = fmt(maoNov85(arvComps, repairMid));
-        $("nFull85Comps").textContent= fmt(maoNov85(arvComps, repairFull));
-      }
-
-      if(zestArv){
-        $("wCosZest").textContent    = fmt(maoWholesale(zestArv, repairCos));
-        $("wMidZest").textContent    = fmt(maoWholesale(zestArv, repairMid));
-        $("wFullZest").textContent   = fmt(maoWholesale(zestArv, repairFull));
-
-        $("nCos85Zest").textContent  = fmt(maoNov85(zestArv, repairCos));
-        $("nMid85Zest").textContent  = fmt(maoNov85(zestArv, repairMid));
-        $("nFull85Zest").textContent = fmt(maoNov85(zestArv, repairFull));
+    if(hasData){
+      populateUI(payload);
+      const status = $("status");
+      if(status){
+        status.textContent = "ARV + MAOs loaded from URL params.";
+        status.className = "status-bar status-success";
       }
     }
+  }
 
-    $("runBtn").addEventListener("click", runFromUrl);
+  function runFromUrl(){
+    const payload = buildPayloadFromParams();
+    const status = $("status");
+    const hasData = payload && (payload.arv_estimate || payload.zestimate || payload.arv_estimate_comps);
 
-    // repair controls
-    const rateCosEl = $("rateCosmetic");
-    const rateMidEl = $("rateMid");
-    const rateFullEl = $("rateFull");
-    const applyRepairsBtn = $("applyRepairs");
+    if(!hasData){
+      status.textContent = "No ARV data found in URL params. Make sure your worker built the full arv_calc_url.";
+      status.className = "status-bar status-error";
+      return;
+    }
 
-    // set some sensible defaults
-    if(rateCosEl) rateCosEl.value = "15";
-    if(rateMidEl) rateMidEl.value = "30";
-    if(rateFullEl) rateFullEl.value = "50";
+    populateUI(payload);
+    status.textContent = "ARV + MAOs reloaded from URL.";
+    status.className = "status-bar status-success";
+  }
 
-    if(applyRepairsBtn){
-      applyRepairsBtn.addEventListener("click", ()=>{
-        recalcMaos();
+  // ==============================
+  // REPAIR SETTINGS HANDLER
+  // ==============================
+  function applyRepairSettings(){
+    const p = window.__sfPayload || {};
+    const sqft = p.sqft || 0;
+    if (!sqft || sqft <= 0) {
+      alert("Missing or invalid square footage for repair calculations.");
+      return;
+    }
+
+    const rateCos = numFromInput("rateCosmetic", 15);
+    const rateMid = numFromInput("rateMid", 30);
+    const rateFull= numFromInput("rateFull", 50);
+
+    const arvComps = p.arv_estimate_comps || p.arv_estimate || null;
+    const arvZest  = (p.arv_estimate_zestimate != null && !isNaN(p.arv_estimate_zestimate))
+      ? p.arv_estimate_zestimate
+      : (p.zestimate || p.arv_estimate || null);
+
+    function calcMao(arv, rate){
+      if (!arv) return { w: null, n85: null };
+      const repairs = sqft * rate;
+      const w = 0.7 * arv - repairs;
+      const n85 = 0.85 * arv - repairs;
+      return {
+        w: w < 0 ? 0 : Math.round(w),
+        n85: n85 < 0 ? 0 : Math.round(n85),
+      };
+    }
+
+    const cosComps = calcMao(arvComps, rateCos);
+    const midComps = calcMao(arvComps, rateMid);
+    const fullComps= calcMao(arvComps, rateFull);
+
+    const cosZest  = calcMao(arvZest, rateCos);
+    const midZest  = calcMao(arvZest, rateMid);
+    const fullZest = calcMao(arvZest, rateFull);
+
+    $("wCosComps").textContent   = fmt(cosComps.w);
+    $("wMidComps").textContent   = fmt(midComps.w);
+    $("wFullComps").textContent  = fmt(fullComps.w);
+
+    $("nCos85Comps").textContent = fmt(cosComps.n85);
+    $("nMid85Comps").textContent = fmt(midComps.n85);
+    $("nFull85Comps").textContent= fmt(fullComps.n85);
+
+    $("wCosZest").textContent    = fmt(cosZest.w);
+    $("wMidZest").textContent    = fmt(midZest.w);
+    $("wFullZest").textContent   = fmt(fullZest.w);
+
+    $("nCos85Zest").textContent  = fmt(cosZest.n85);
+    $("nMid85Zest").textContent  = fmt(midZest.n85);
+    $("nFull85Zest").textContent = fmt(fullZest.n85);
+  }
+
+  // ==============================
+  // INIT
+  // ==============================
+  window.addEventListener("DOMContentLoaded", async () => {
+    const loadedFromDoc = await loadFromDocId(false);
+    if (!loadedFromDoc) {
+      prefillFromUrl();
+    }
+
+    const runBtn = $("runBtn");
+    if (runBtn) {
+      runBtn.addEventListener("click", async () => {
+        const ok = await loadFromDocId(true);
+        if (!ok) runFromUrl();
       });
     }
 
-    // initial load
-    prefillFromUrl();
-  </script>
+    const applyBtn = $("applyRepairs");
+    if (applyBtn) {
+      applyBtn.addEventListener("click", applyRepairSettings);
+    }
+  });
+</script>
+
+
+  
 </body>
 </html>
