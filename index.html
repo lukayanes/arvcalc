@@ -552,103 +552,67 @@
           </button>
           <div class="subtext">
             Uses property sq ft × $/sq ft, then:<br />
-            Wholesale MAO = 70% × ARV – repairs<br />
+             MAO = 70% × ARV – repairs<br />
             Novation MAO (85%) = 85% × ARV – repairs
           </div>
         </div>
 
-        <!-- WHOLESALE (COMPS ARV) -->
-        <div style="margin-top:14px;padding:8px;border-radius:10px;background:#F7F8FA;border:1px solid #D6DAE1;">
-          <h3 style="font-size:13px;margin:0 0 6px 0;">Wholesale MAO (Comps ARV)</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Level</th>
-                <th>Cosmetic</th>
-                <th>Mid-Level</th>
-                <th>Full Gut</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Wholesale</td>
-                <td id="wCosComps">$–</td>
-                <td id="wMidComps">$–</td>
-                <td id="wFullComps">$–</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- NOVATION 85% (COMPS ARV) -->
-        <div style="margin-top:10px;padding:8px;border-radius:10px;background:#F7F8FA;border:1px solid #D6DAE1;">
-          <h3 style="font-size:13px;margin:0 0 6px 0;">Novation MAO (Comps ARV – 85%)</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Level</th>
-                <th>Cosmetic</th>
-                <th>Mid-Level</th>
-                <th>Full Gut</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Novation 85%</td>
-                <td id="nCos85Comps">$–</td>
-                <td id="nMid85Comps">$–</td>
-                <td id="nFull85Comps">$–</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                <!-- WHOLESALE + NOVATION MAO TABLES (COMBINED COMPS + ZESTIMATE) -->
+        <h3 style="font-size:13px;margin-top:14px;">Wholesale MAO (Comps vs. Zestimate)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Rehab Level</th>
+              <th>Wholesale (Comps ARV)</th>
+              <th>Wholesale (Zestimate ARV)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Cosmetic</td>
+              <td id="wCosComps">$–</td>
+              <td id="wCosZest">$–</td>
+            </tr>
+            <tr>
+              <td>Mid-Level</td>
+              <td id="wMidComps">$–</td>
+              <td id="wMidZest">$–</td>
+            </tr>
+            <tr>
+              <td>Full Gut</td>
+              <td id="wFullComps">$–</td>
+              <td id="wFullZest">$–</td>
+            </tr>
+          </tbody>
+        </table>
 
-
-        <!-- WHOLESALE (ZESTIMATE ARV) -->
-        <div style="margin-top:10px;padding:8px;border-radius:10px;background:#F7F8FA;border:1px solid #D6DAE1;">
-          <h3 style="font-size:13px;margin:0 0 6px 0;">Wholesale MAO (Zestimate ARV)</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Level</th>
-                <th>Cosmetic</th>
-                <th>Mid-Level</th>
-                <th>Full Gut</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Wholesale</td>
-                <td id="wCosZest">$–</td>
-                <td id="wMidZest">$–</td>
-                <td id="wFullZest">$–</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- NOVATION 85% (ZESTIMATE ARV) -->
-        <div style="margin-top:10px;padding:8px;border-radius:10px;background:#F7F8FA;border:1px solid #D6DAE1;">
-          <h3 style="font-size:13px;margin:0 0 6px 0;">Novation MAO (Zestimate ARV – 85%)</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Level</th>
-                <th>Cosmetic</th>
-                <th>Mid-Level</th>
-                <th>Full Gut</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Novation 85%</td>
-                <td id="nCos85Zest">$–</td>
-                <td id="nMid85Zest">$–</td>
-                <td id="nFull85Zest">$–</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <h3 style="font-size:13px;margin-top:14px;">Novation MAO 85% (Comps vs. Zestimate)</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Rehab Level</th>
+              <th>Novation 85% (Comps ARV)</th>
+              <th>Novation 85% (Zestimate ARV)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Cosmetic</td>
+              <td id="nCos85Comps">$–</td>
+              <td id="nCos85Zest">$–</td>
+            </tr>
+            <tr>
+              <td>Mid-Level</td>
+              <td id="nMid85Comps">$–</td>
+              <td id="nMid85Zest">$–</td>
+            </tr>
+            <tr>
+              <td>Full Gut</td>
+              <td id="nFull85Comps">$–</td>
+              <td id="nFull85Zest">$–</td>
+            </tr>
+          </tbody>
+        </table>
 
 
   <script>
