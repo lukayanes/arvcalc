@@ -424,6 +424,126 @@
     .comp-toggle input[type="checkbox"]{
       cursor:pointer;
     }
+
+    /* NEW: Subject-To + cashflow styling */
+    .subto-card{
+      margin-top:14px;
+      padding:10px 10px 10px;
+      border-radius:12px;
+      background:#EDEFF4;
+      font-size:12px;
+    }
+    .subto-header-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+      margin-bottom:6px;
+    }
+    .subto-title{
+      font-weight:600;
+      font-size:13px;
+    }
+    .subto-tag{
+      font-size:11px;
+      padding:3px 8px;
+      border-radius:999px;
+      text-transform:uppercase;
+      letter-spacing:.02em;
+      font-weight:600;
+      white-space:nowrap;
+    }
+    .subto-tag-strong{
+      background:#DCFCE7;
+      color:#166534;
+      border:1px solid #15803D;
+    }
+    .subto-tag-ok{
+      background:#FEF9C3;
+      color:#854D0E;
+      border:1px solid #FACC15;
+    }
+    .subto-tag-bad{
+      background:#FEE2E2;
+      color:#B91C1C;
+      border:1px solid #F97373;
+    }
+    .subto-tag-neutral{
+      background:#E5E7EB;
+      color:#4B5563;
+      border:1px solid #D1D5DB;
+    }
+    .subto-grid{
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:8px;
+    }
+    @media(max-width:600px){
+      .subto-grid{
+        grid-template-columns:1fr 1fr;
+      }
+    }
+    .subto-item-label{
+      font-size:11px;
+      color:var(--muted);
+      margin-bottom:2px;
+    }
+    .subto-item-value{
+      font-size:13px;
+      font-weight:600;
+    }
+    .subto-item-value.positive{
+      color:#166534;
+    }
+    .subto-item-value.negative{
+      color:#B91C1C;
+    }
+    .subto-subtext{
+      font-size:11px;
+      color:var(--muted);
+      margin-top:6px;
+    }
+
+    /* NEW: comp recency + garage styling */
+    .comp-meta-line{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      align-items:center;
+    }
+    .recency-pill{
+      font-size:10px;
+      padding:2px 6px;
+      border-radius:999px;
+      border:1px solid transparent;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+      font-weight:600;
+      white-space:nowrap;
+    }
+    .recency-green{
+      background:#DCFCE7;
+      color:#166534;
+      border-color:#15803D;
+    }
+    .recency-yellow{
+      background:#FEF9C3;
+      color:#854D0E;
+      border-color:#FACC15;
+    }
+    .recency-red{
+      background:#FEE2E2;
+      color:#B91C1C;
+      border-color:#F97373;
+    }
+    .garage-pill{
+      padding:2px 6px;
+      border-radius:999px;
+      background:#E8ECF3;
+      font-size:10px;
+      color:var(--muted);
+      white-space:nowrap;
+    }
   </style>
 </head>
 <body>
@@ -532,6 +652,35 @@
 
         <div class="exit-strategy">
           Suggested Exit: <span id="exitStrategy">–</span>
+        </div>
+
+        <!-- NEW: Subject-To & Cash Flow section -->
+        <div class="subto-card">
+          <div class="subto-header-row">
+            <div class="subto-title">Subject-To & Cash Flow Snapshot</div>
+            <div id="subtoDealTag" class="subto-tag subto-tag-neutral">NEEDS DATA</div>
+          </div>
+          <div class="subto-grid">
+            <div>
+              <div class="subto-item-label">Est. Monthly Rent</div>
+              <div id="subtoRent" class="subto-item-value">$–</div>
+            </div>
+            <div>
+              <div class="subto-item-label">Est. PITI Payment</div>
+              <div id="subtoPITI" class="subto-item-value">$–</div>
+            </div>
+            <div>
+              <div class="subto-item-label">Est. Monthly Cash Flow</div>
+              <div id="subtoCashflow" class="subto-item-value">$–</div>
+            </div>
+            <div>
+              <div class="subto-item-label">Rent / PITI Ratio</div>
+              <div id="subtoRentPiti" class="subto-item-value">–</div>
+            </div>
+          </div>
+          <div id="subtoDetails" class="subto-subtext">
+            Subject-to loan details will appear here when available from the Summit Flow ARV worker.
+          </div>
         </div>
 
         <!-- Repair settings -->
@@ -649,6 +798,15 @@
       return Number.isFinite(n) ? n : null;
     }
 
+    function boolParam(name){
+      const v = getParam(name);
+      if(!v) return null;
+      const low = v.toLowerCase();
+      if (low === "true" || low === "1") return true;
+      if (low === "false" || low === "0") return false;
+      return null;
+    }
+
     function numFromInput(id, fallback){
       const el = $(id);
       if(!el) return fallback;
@@ -678,6 +836,17 @@
       p.year_built= numParam("year_built");
       p.zestimate = numParam("zestimate");
 
+      // NEW: garage & parking (subject) if ever passed via params
+      p.garage_spaces     = numParam("garage_spaces");
+      p.has_garage        = boolParam("has_garage");
+      p.parking_features  = getParam("parking_features");
+
+      // NEW: rent + yield metrics
+      p.rent_zestimate         = numParam("rent_zestimate");
+      p.rent_to_value_percent  = numParam("rent_to_value_percent");
+      p.gross_yield_percent    = numParam("gross_yield_percent");
+
+      // Subject images
       p.subject_image_url = getParam("subject_image_url");
       p.subject_images = [];
       const subjJson = getParam("subject_images_json") || getParam("subject_image_urls") || null;
@@ -714,6 +883,21 @@
       p.last_sale_price    = numParam("last_sale_price");
       p.zillow_url         = getParam("zillow_url") || getParam("subject_zillow_url");
       p.exit_strategy      = getParam("exit_strategy");
+
+      // NEW: subject-to fields (flattened)
+      p.subto_est_loan_amount           = numParam("subto_est_loan_amount");
+      p.subto_est_down_payment          = numParam("subto_est_down_payment");
+      p.subto_interest_rate_percent     = numParam("subto_interest_rate_percent");
+      p.subto_term_years                = numParam("subto_term_years");
+      p.subto_estimated_taxes_monthly   = numParam("subto_estimated_taxes_monthly");
+      p.subto_estimated_insurance_monthly = numParam("subto_estimated_insurance_monthly");
+      p.subto_monthly_pi                = numParam("subto_monthly_pi");
+      p.subto_monthly_piti              = numParam("subto_monthly_piti");
+      p.subto_monthly_rent              = numParam("subto_monthly_rent");
+      p.subto_monthly_cashflow          = numParam("subto_monthly_cashflow");
+      p.subto_rent_to_piti_ratio        = numParam("subto_rent_to_piti_ratio");
+      p.subto_is_cashflow_positive      = boolParam("subto_is_cashflow_positive");
+      p.subto_is_strong_candidate       = boolParam("subto_is_strong_candidate");
 
       // MAOs - COMPS
       p.wholesale_mao_cosmetic_comps = numParam("wholesale_mao_cosmetic_comps");
@@ -769,7 +953,13 @@
           last_sale_date: getParam(`comp${i}_last_sale_date`) || null,
           last_sale_price:numParam(`comp${i}_last_sale_price`),
           zillow_url:     url,
-          images:         compImages
+          images:         compImages,
+          // NEW: garage & recency fields for comps from URL (optional)
+          garage_spaces:        numParam(`comp${i}_garage_spaces`),
+          has_garage:           boolParam(`comp${i}_has_garage`),
+          parking_features:     getParam(`comp${i}_parking_features`),
+          sale_age_days:        numParam(`comp${i}_sale_age_days`),
+          recency_color:        getParam(`comp${i}_recency_color`)
         };
         comps.push(comp);
       }
@@ -846,7 +1036,7 @@
           const thumb = document.createElement("div");
           thumb.className = "photo-thumb" + (idx === 0 ? " active" : "");
           thumb.dataset.index = String(idx);
-          thumb.innerHTML = `<img src="${url}" alt="Property photo ${idx+1}" />`;
+          thumb.innerHTML = '<img src="' + url + '" alt="Property photo ' + (idx+1) + '" />';
           thumb.addEventListener("click", () => {
             if (mainPhotoEl) mainPhotoEl.src = url;
             const allThumbs = thumbsWrap.querySelectorAll(".photo-thumb");
@@ -872,6 +1062,18 @@
       if(p.year_built){
         pills.push(`<div class="pill">📆 Built ${p.year_built}</div>`);
       }
+
+      // NEW: rent & yield pills
+      if (p.rent_zestimate != null) {
+        pills.push(`<div class="pill">🏠 Rent: ${fmt(p.rent_zestimate)}</div>`);
+      }
+      if (p.rent_to_value_percent != null) {
+        pills.push(`<div class="pill">📊 Rent / Value: ${Number(p.rent_to_value_percent).toFixed(2)}%</div>`);
+      }
+      if (p.gross_yield_percent != null) {
+        pills.push(`<div class="pill">💼 Gross Yield: ${Number(p.gross_yield_percent).toFixed(2)}%</div>`);
+      }
+
       if(p.zillow_url || p.subject_zillow_url){
         const link = p.zillow_url || p.subject_zillow_url;
         pills.push(
@@ -960,6 +1162,98 @@
       $("nMid85Zest").textContent  = fmt(p.novation_mao_mid_85_zestimate);
       $("nFull85Zest").textContent = fmt(p.novation_mao_full_85_zestimate);
 
+      // NEW: Subject-To UI wiring
+      const monthlyRent = (p.subto_monthly_rent != null ? p.subto_monthly_rent : p.rent_zestimate);
+      const monthlyPITI = (p.subto_monthly_piti != null ? p.subto_monthly_piti : null);
+      let monthlyCF = (p.subto_monthly_cashflow != null ? p.subto_monthly_cashflow : null);
+
+      if (monthlyCF == null && monthlyRent != null && monthlyPITI != null) {
+        monthlyCF = monthlyRent - monthlyPITI;
+      }
+
+      let ratio = (p.subto_rent_to_piti_ratio != null ? p.subto_rent_to_piti_ratio : null);
+      if (ratio == null && monthlyRent != null && monthlyPITI != null && monthlyPITI > 0) {
+        ratio = monthlyRent / monthlyPITI;
+      }
+
+      const rentEl = $("subtoRent");
+      const pitiEl = $("subtoPITI");
+      const cfEl   = $("subtoCashflow");
+      const ratioEl= $("subtoRentPiti");
+      const tagEl  = $("subtoDealTag");
+      const detailsEl = $("subtoDetails");
+
+      if (rentEl)  rentEl.textContent  = fmt(monthlyRent);
+      if (pitiEl)  pitiEl.textContent  = fmt(monthlyPITI);
+      if (cfEl) {
+        if (monthlyCF == null) {
+          cfEl.textContent = "$–";
+        } else {
+          cfEl.textContent = fmt(monthlyCF);
+          cfEl.classList.toggle("positive", monthlyCF > 0);
+          cfEl.classList.toggle("negative", monthlyCF < 0);
+        }
+      }
+      if (ratioEl) {
+        if (ratio == null || !isFinite(ratio)) {
+          ratioEl.textContent = "–";
+        } else {
+          ratioEl.textContent = ratio.toFixed(2) + "x";
+        }
+      }
+
+      if (tagEl) {
+        let tagClass = "subto-tag subto-tag-neutral";
+        let tagText  = "NEEDS DATA";
+
+        const strong = p.subto_is_strong_candidate;
+        const posCF  = p.subto_is_cashflow_positive;
+
+        if (strong === true) {
+          tagClass = "subto-tag subto-tag-strong";
+          tagText  = "STRONG SUB-TO CANDIDATE";
+        } else if (posCF === false) {
+          tagClass = "subto-tag subto-tag-bad";
+          tagText  = "NEGATIVE CASH FLOW";
+        } else if (posCF === true) {
+          tagClass = "subto-tag subto-tag-ok";
+          tagText  = "POSITIVE CASH FLOW";
+        } else {
+          tagClass = "subto-tag subto-tag-neutral";
+          tagText  = "NEEDS DATA";
+        }
+
+        tagEl.className = tagClass;
+        tagEl.textContent = tagText;
+      }
+
+      if (detailsEl) {
+        const bits = [];
+        if (p.subto_est_loan_amount != null) {
+          bits.push("Est. loan $" + Number(p.subto_est_loan_amount).toLocaleString());
+        }
+        if (p.subto_interest_rate_percent != null) {
+          bits.push("Rate ~" + Number(p.subto_interest_rate_percent).toFixed(2) + "%");
+        }
+        if (p.subto_term_years != null) {
+          bits.push(Number(p.subto_term_years) + " yr term");
+        }
+        if (p.subto_estimated_taxes_monthly != null) {
+          bits.push("Taxes ≈ " + fmt(p.subto_estimated_taxes_monthly) + "/mo");
+        }
+        if (p.subto_estimated_insurance_monthly != null) {
+          bits.push("Ins ≈ " + fmt(p.subto_estimated_insurance_monthly) + "/mo");
+        }
+
+        if (bits.length) {
+          detailsEl.textContent =
+            "Estimated legacy loan: " + bits.join(" · ");
+        } else {
+          detailsEl.textContent =
+            "Subject-to loan details will appear here when available from the Summit Flow ARV worker.";
+        }
+      }
+
       // Comps
       const compsEl = $("comps");
       compsEl.innerHTML = "";
@@ -1001,7 +1295,60 @@
           lastSold += (lastSold ? " · " : "") + fmt(soldPrice);
         }
 
-        // *** FIXED: build photosHtml WITHOUT nested backticks ***
+        // NEW: recency pill from sale_age_days / recency_color
+        let recencyHtml = "";
+        const age = (typeof c.sale_age_days === "number" ? c.sale_age_days : null);
+        let recencyClass = "";
+        let recencyText  = "";
+
+        if (age != null && isFinite(age)) {
+          if (age <= 90) {
+            recencyClass = "recency-pill recency-green";
+            recencyText  = "≤90D";
+          } else if (age <= 180) {
+            recencyClass = "recency-pill recency-yellow";
+            recencyText  = "90–180D";
+          } else if (age <= 365) {
+            recencyClass = "recency-pill recency-red";
+            recencyText  = "180–365D";
+          }
+        } else if (c.recency_color) {
+          // fallback if only color string is available
+          const colorStr = c.recency_color.toLowerCase();
+          if (colorStr === "green") {
+            recencyClass = "recency-pill recency-green";
+            recencyText = "RECENT";
+          } else if (colorStr === "yellow") {
+            recencyClass = "recency-pill recency-yellow";
+            recencyText = "MID";
+          } else if (colorStr === "red") {
+            recencyClass = "recency-pill recency-red";
+            recencyText = "OLDER";
+          }
+        }
+
+        if (recencyClass && recencyText) {
+          recencyHtml = `<span class="${recencyClass}">${recencyText}</span>`;
+        }
+
+        // NEW: garage line
+        const garageBits = [];
+        if (c.has_garage === true) {
+          garageBits.push("Garage");
+        } else if (c.has_garage === false) {
+          garageBits.push("No garage");
+        }
+        if (typeof c.garage_spaces === "number") {
+          garageBits.push(`${c.garage_spaces} spaces`);
+        }
+        if (c.parking_features) {
+          garageBits.push(c.parking_features);
+        }
+        const garageHtml = garageBits.length
+          ? `<span class="garage-pill">🚗 ${garageBits.join(" · ")}</span>`
+          : "";
+
+        // Photos
         let photosHtml = "";
         if (Array.isArray(c.images) && c.images.length) {
           const thumbs = c.images.slice(0, 10).map((u, photoIdx) => {
@@ -1029,8 +1376,14 @@
               Include in ARV
             </label>
           </div>
-          <div class="comp-meta">${metaBits.join(" · ") || ""}</div>
-          <div class="comp-meta">${lastSold}</div>
+          <div class="comp-meta-line">
+            <div class="comp-meta">${metaBits.join(" · ") || ""}</div>
+            ${recencyHtml}
+          </div>
+          <div class="comp-meta-line">
+            <div class="comp-meta">${lastSold}</div>
+            ${garageHtml}
+          </div>
           ${photosHtml}
           ${linkHtml}
         `;
@@ -1281,3 +1634,4 @@
   </script>
 </body>
 </html>
+
